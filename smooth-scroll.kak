@@ -26,7 +26,6 @@ define-command smooth-scroll -params 4 -override %{
         fi
 
         times=$(( amount / speed ))
-        echo $duration
 
         (
             i=0
@@ -45,7 +44,7 @@ define-command smooth-scroll -params 4 -override %{
     }
 }
 
-map global normal <c-d> ': smooth-scroll d 1 0.05 1<ret>'
-map global normal <c-u> ': smooth-scroll u 1 0.05 1<ret>'
-map global normal <c-f> ': smooth-scroll d 0 0.05 1<ret>'
-map global normal <c-b> ': smooth-scroll u 0 0.05 1<ret>'
+map global normal <c-d> ': smooth-scroll d 1 0.005 1<ret>'
+map global normal <c-u> ': smooth-scroll u 1 0.005 1<ret>'
+map global normal <c-f> ': smooth-scroll d 0 0.003 1<ret>'
+map global normal <c-b> ': smooth-scroll u 0 0.003 1<ret>'
