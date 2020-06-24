@@ -10,7 +10,12 @@ class KakSender:
     def __init__(self):
         self.session = os.environ['kak_session']
         self.client = os.environ['kak_client']
-        self.socket_path = f"{os.environ.get('TMPDIR', '/tmp')}/kakoune/{os.environ['USER']}/{self.session}"
+        xdg_runtime_dir = os.environ.get('XDG_RUNTIME_DIR')
+        if xdg_runtime_dir is None:
+            runtime_path = f"{os.environ.get('TMPDIR', '/tmp')}/kakoune/{os.environ['USER']}"
+        else:
+            runtime_path = f"{xdg_runtime_dir}/kakoune"
+        self.socket_path = f"{runtime_path}/{self.session}"
 
     def send_cmd(self, b_cmd: bytes) -> float:
         ts = time.time()
