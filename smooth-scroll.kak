@@ -9,7 +9,7 @@ define-command smooth-scroll -params 4 -override -docstring "
         duration:  amount of time between each scroll tick, in milliseconds
         speed:     number of lines scroll with each tick
     " %{
-    nop %sh{
+    echo -debug %sh{
         direction=$1
         half=$2
         duration=$3
@@ -20,6 +20,7 @@ define-command smooth-scroll -params 4 -override -docstring "
             python3 "$kak_opt_scroll_py" "$direction" "$half" "$duration" "$speed" >/dev/null 2>&1 </dev/null &
             return
         fi
+        echo "kakoune-smooth-scroll: WARNING -- cannot execute python version, falling back to pure sh"
 
         # fall back to pure sh
         if [ "$direction" = "d" ]; then
