@@ -1,4 +1,5 @@
 declare-option -hidden str scroll_py %sh{printf "%s" "${kak_source%.kak}.py"}
+declare-option -hidden bool scroll_fallback false
 
 define-command smooth-scroll -params 4 -override -docstring "
     smooth-scroll <direction> <half> <duration> <speed>: Scroll half or full screen towards given direction smoothly
@@ -9,7 +10,7 @@ define-command smooth-scroll -params 4 -override -docstring "
         duration:  amount of time between each scroll tick, in milliseconds
         speed:     number of lines scroll with each tick
     " %{
-    echo -debug %sh{
+    evaluate-commands %sh{
         direction=$1
         half=$2
         duration=$3
@@ -20,9 +21,13 @@ define-command smooth-scroll -params 4 -override -docstring "
             python3 "$kak_opt_scroll_py" "$direction" "$half" "$duration" "$speed" >/dev/null 2>&1 </dev/null &
             return
         fi
-        echo "kakoune-smooth-scroll: WARNING -- cannot execute python version, falling back to pure sh"
 
         # fall back to pure sh
+        if [ "$kak_opt_scroll_fallback" = "false" ]; then
+            printf '%s\n' "set-option global scroll_fallback true"
+            echo "echo -debug kakoune-smooth-scroll: WARNING -- cannot execute python version, falling back to pure sh"
+        fi
+
         if [ "$direction" = "d" ]; then
             maxscroll=$(( kak_buf_line_count - kak_cursor_line ))
             keys="${speed}j${speed}vj"
@@ -57,6 +62,7 @@ define-command smooth-scroll -params 4 -override -docstring "
             done
         ) >/dev/null 2>&1 </dev/null &
     }
+
 }
 
 # suggested mappings
