@@ -8,7 +8,6 @@ import sys
 import os
 import time
 import socket
-from typing import Optional
 
 
 class KakSender:
@@ -46,11 +45,9 @@ class KakSender:
         b_message = b_header + b_content
         return sock.send(b_message) == len(b_message)
 
-    def send_keys(self, keys: str, client: Optional[str] = None) -> bool:
-        """Send a sequence of keys to a client in the Kakoune session."""
-        if client is None:
-            client = self.client
-        cmd = f"execute-keys -client {client} {keys}"
+    def send_keys(self, keys: str) -> bool:
+        """Send a sequence of keys to the client in the Kakoune session."""
+        cmd = f"execute-keys -client {self.client} {keys}"
         return self.send_cmd(cmd)
 
     @staticmethod
