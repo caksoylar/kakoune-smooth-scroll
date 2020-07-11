@@ -1,14 +1,9 @@
 #!/bin/sh
 
-kak_session=$1
-kak_client=$2
-kak_cursor_line=$3
-kak_buf_line_count=$4
-kak_window_height=$5
-direction=$6
-half=$7
-duration=$8
-speed=$9
+direction=$1
+half=$2
+duration=$3
+speed=$4
 
 if [ "$direction" = "d" ]; then
     maxscroll=$(( kak_buf_line_count - kak_cursor_line ))
