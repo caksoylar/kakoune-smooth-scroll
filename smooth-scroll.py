@@ -72,23 +72,25 @@ def main() -> None:
     Do smooth scrolling using KakSender methods. Expected positional arguments:
         direction: 'd' for down or 'u' for up
         half:      0 for full screen scroll (<c-f>/<c-b>), 1 for half (<c-d>/<c-u>)
+        count:     input count to map, 0 defaults to 1
         duration:  amount of time between each scroll tick, in milliseconds
-        speed:     number of lines scroll with each tick
+        speed:     number of lines to scroll with each tick
     """
     cursor_line = int(os.environ['kak_cursor_line'])
     line_count = int(os.environ['kak_buf_line_count'])
     window_height = int(os.environ['kak_window_height'])
     direction = sys.argv[1]  # 'd' for down, 'u' for up
     half = int(sys.argv[2])  # 0 or 1 depending on full or half-screen scroll
-    duration = float(sys.argv[3]) / 1000  # interval between ticks, convert ms to s
-    speed = int(sys.argv[4])  # number of lines per tick
+    count = max(1, int(sys.argv[3]))  # 0 means 1
+    duration = float(sys.argv[4]) / 1000  # interval between ticks, convert ms to s
+    speed = int(sys.argv[5])  # number of lines per tick
 
     maxscroll = line_count - cursor_line if direction == 'd' else cursor_line - 1
     if maxscroll == 0:
         return
 
     sender = KakSender()
-    amount = min((window_height - 2) // (1 + half), maxscroll)
+    amount = min(count * (window_height - 2) // (1 + half), maxscroll)
     times = amount // speed
     for _ in range(times):
         scroll(sender, direction, speed, duration)

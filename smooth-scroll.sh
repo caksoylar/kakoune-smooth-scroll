@@ -2,8 +2,9 @@
 
 direction=$1
 half=$2
-duration=$3
-speed=$4
+count=$3
+duration=$4
+speed=$5
 
 if [ "$direction" = "d" ]; then
     maxscroll=$(( kak_buf_line_count - kak_cursor_line ))
@@ -17,7 +18,10 @@ if [ $maxscroll -eq 0 ]; then
 fi
 cmd="printf 'execute-keys -client %s %s\\n' ""$kak_client"" ""$keys"" | kak -p ""$kak_session"""
 
-amount=$(( (kak_window_height - 2) / (1 + half) ))
+if [ "$count" -eq 0 ]; then
+    count=1
+fi
+amount=$(( count * (kak_window_height - 2) / (1 + half) ))
 if [ $maxscroll -lt $amount ]; then
     amount=$maxscroll
 fi
