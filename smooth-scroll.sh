@@ -33,7 +33,7 @@ t1=$(date +%s.%N)
 while [ $i -lt $times ]; do
     eval "$cmd"
     t2=$(date +%s.%N)
-    sleep_for=$(printf 'scale=3; %f - (%f - %f)\n' "$duration" "$t2" "$t1" | bc)
+    sleep_for=$(printf 'scale=3; %f/1000 - (%f - %f)\n' "$duration" "$t2" "$t1" | bc)
     if [ "${sleep_for#-}" = "$sleep_for" ]; then
         sleep "$sleep_for"
     fi

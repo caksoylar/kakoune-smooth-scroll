@@ -55,7 +55,7 @@ class KakSender:
         return str_length.to_bytes(4, byteorder=sys.byteorder)
 
 
-def scroll(sender: KakSender, direction: str, speed: int, duration: float) -> None:
+def scroll_once(sender: KakSender, direction: str, speed: int, duration: float) -> None:
     """Send a scroll event to Kakoune client and make sure it takes at least
     `duration` seconds."""
     t_start = time.time()
@@ -67,6 +67,26 @@ def scroll(sender: KakSender, direction: str, speed: int, duration: float) -> No
         time.sleep(duration - elapsed)
 
 
+def inertial_scroll(sender: KakSender, direction: str, n_lines: int, duration: float) -> None:
+    """
+    Do inertial scrolling with initial velocity decreasing linearly at each
+    step towards zero. Per-step scrolling duration d_i is the inverse of the
+    instantaneous velocity v_i. Compute initial velocity v_1 such that the
+    total duration (omitting the final step) matches the linear scrolling
+    duration. For S = n_lines this is given by solving the formula
+
+        (S-1) * duration = sum_{i=1}^{S-1} d_i
+
+    where d_i = 1/v_i and v_i = v_1*(S-i+1)/S.
+    """
+    velocity = n_lines * sum(1. / x for x in range(2, n_lines + 1)) \
+        / ((n_lines - 1) * duration)
+    d_velocity = velocity / n_lines
+    for i in range(n_lines):
+        scroll_once(sender, direction, 1, 1 / velocity * (i < n_lines - 1))
+        velocity -= d_velocity
+
+
 def main() -> None:
     """
     Do smooth scrolling using KakSender methods. Expected positional arguments:
@@ -74,7 +94,7 @@ def main() -> None:
         half:      0 for full screen scroll (<c-f>/<c-b>), 1 for half (<c-d>/<c-u>)
         count:     input count to map, 0 defaults to 1
         duration:  amount of time between each scroll tick, in milliseconds
-        speed:     number of lines to scroll with each tick
+        speed:     number of lines to scroll with each tick, 0 for inertial scrolling
     """
     cursor_line = int(os.environ['kak_cursor_line'])
     line_count = int(os.environ['kak_buf_line_count'])
@@ -90,10 +110,13 @@ def main() -> None:
         return
 
     sender = KakSender()
-    amount = min(count * (window_height - 2) // (1 + half), maxscroll)
-    times = amount // speed
-    for _ in range(times):
-        scroll(sender, direction, speed, duration)
+    n_lines = min(count * (window_height - 2) // (1 + half), maxscroll)
+    if speed > 0 or duration < 1e-3:  # fixed speed scroll
+        times = n_lines // max(speed, 1)
+        for i in range(times):
+            scroll_once(sender, direction, speed, duration * (i < times - 1))
+    else:  # inertial scroll
+        inertial_scroll(sender, direction, n_lines, duration)
 
 
 if __name__ == '__main__':

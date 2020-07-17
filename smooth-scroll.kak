@@ -71,13 +71,13 @@ define-command smooth-scroll -params 5 -override -docstring "
 }
 
 # suggested mappings (python)
-map global normal <c-d> ': smooth-scroll d 1 %val{count} 10 1<ret>'
-map global normal <c-u> ': smooth-scroll u 1 %val{count} 10 1<ret>'
-map global normal <c-f> ': smooth-scroll d 0 %val{count}  5 1<ret>'
-map global normal <c-b> ': smooth-scroll u 0 %val{count}  5 1<ret>'
+map global normal <c-d> ': smooth-scroll d 1 %val{count} 20 0<ret>'
+map global normal <c-u> ': smooth-scroll u 1 %val{count} 20 0<ret>'
+map global normal <c-f> ': smooth-scroll d 0 %val{count} 10 0<ret>'
+map global normal <c-b> ': smooth-scroll u 0 %val{count} 10 0<ret>'
 
 # suggested mappings (sh)
-#map global normal <c-d> ': smooth-scroll d 1 %val{count} 30 3<ret>'
-#map global normal <c-u> ': smooth-scroll u 1 %val{count} 30 3<ret>'
-#map global normal <c-f> ': smooth-scroll d 0 %val{count} 15 3<ret>'
-#map global normal <c-b> ': smooth-scroll u 0 %val{count} 15 3<ret>'
+#map global normal <c-d> ': smooth-scroll d 1 %val{count} 40 2<ret>'
+#map global normal <c-u> ': smooth-scroll u 1 %val{count} 40 2<ret>'
+#map global normal <c-f> ': smooth-scroll d 0 %val{count} 20 2<ret>'
+#map global normal <c-b> ': smooth-scroll u 0 %val{count} 20 2<ret>'
