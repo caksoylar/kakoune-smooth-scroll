@@ -1,26 +1,24 @@
 declare-option -hidden str scroll_py %sh{printf "%s" "${kak_source%.kak}.py"}
 declare-option -hidden bool scroll_fallback false
 
-define-command smooth-scroll -params 5 -override -docstring "
-    smooth-scroll <direction> <half> <count> <duration> <speed>: Scroll half or full screen towards given direction smoothly
+define-command smooth-scroll -params 3 -override -docstring "
+    smooth-scroll <amount> <duration> <speed>: Scroll half or full screen towards given direction smoothly
 
     Args:
-        direction: 'd' for down or 'u' for up
-        half:      0 for full screen scroll (<c-f>/<c-b>), 1 for half (<c-d>/<c-u>)
-        count:     input count to map, 0 defaults to 1
-        duration:  amount of time between each scroll tick, in milliseconds
-        speed:     number of lines to scroll with each tick
+        amount:   number of lines to scroll as the fraction of a full screen
+                  positive for down, negative for up, e.g. 1 for <c-f>, -0.5 for <c-u>
+        duration: amount of time between each scroll tick, in milliseconds
+        speed:    number of lines to scroll with each tick
     " %{
     evaluate-commands %sh{
-        direction=$1
-        half=$2
-        count=$3
-        duration=$4
-        speed=$5
+        amount=$1
+        duration=$2
+        speed=$3
+        # echo "echo -debug $kak_count"
 
         # try to run the python version
         if type python3 >/dev/null 2>&1 && [ -f "$kak_opt_scroll_py" ]; then
-            python3 "$kak_opt_scroll_py" "$direction" "$half" "$count" "$duration" "$speed" >/dev/null 2>&1 </dev/null &
+            python3 "$kak_opt_scroll_py" "$amount" "$duration" "$speed" >/dev/null 2>&1 </dev/null &
             return
         fi
 
@@ -30,7 +28,16 @@ define-command smooth-scroll -params 5 -override -docstring "
             echo "echo -debug kakoune-smooth-scroll: WARNING -- cannot execute python version, falling back to pure sh"
         fi
 
-        if [ "$direction" = "d" ]; then
+        abs_amount=${amount#-}
+        if [ "$kak_count" -eq 0 ]; then
+            count=1
+        else
+            count=$kak_count
+        fi
+        if [ "$speed" -eq 0 ]; then
+            speed=1
+        fi
+        if [ "$abs_amount" = "$amount" ]; then
             maxscroll=$(( kak_buf_line_count - kak_cursor_line ))
             keys="${speed}j${speed}vj"
         else
@@ -42,15 +49,12 @@ define-command smooth-scroll -params 5 -override -docstring "
         fi
         cmd="printf 'execute-keys -client %s %s\\n' ""$kak_client"" ""$keys"" | kak -p ""$kak_session"""
 
-        if [ "$count" -eq 0 ]; then
-            count=1
-        fi
-        amount=$(( count * (kak_window_height - 2) / (1 + half) ))
-        if [ $maxscroll -lt $amount ]; then
-            amount=$maxscroll
+        toscroll=$(echo "$count * $abs_amount * ($kak_window_height - 2) / 1" | bc)
+        if [ "$maxscroll" -lt "$toscroll" ]; then
+            toscroll=$maxscroll
         fi
 
-        times=$(( amount / speed ))
+        times=$(( toscroll / speed ))
 
         (
             i=0
@@ -71,13 +75,13 @@ define-command smooth-scroll -params 5 -override -docstring "
 }
 
 # suggested mappings (python)
-map global normal <c-d> ': smooth-scroll d 1 %val{count} 20 0<ret>'
-map global normal <c-u> ': smooth-scroll u 1 %val{count} 20 0<ret>'
-map global normal <c-f> ': smooth-scroll d 0 %val{count} 10 0<ret>'
-map global normal <c-b> ': smooth-scroll u 0 %val{count} 10 0<ret>'
+map global normal <c-d> ': smooth-scroll  0.5 20 0<ret>'
+map global normal <c-u> ': smooth-scroll -0.5 20 0<ret>'
+map global normal <c-f> ': smooth-scroll  1.0 10 0<ret>'
+map global normal <c-b> ': smooth-scroll -1.0 10 0<ret>'
 
 # suggested mappings (sh)
-#map global normal <c-d> ': smooth-scroll d 1 %val{count} 40 2<ret>'
-#map global normal <c-u> ': smooth-scroll u 1 %val{count} 40 2<ret>'
-#map global normal <c-f> ': smooth-scroll d 0 %val{count} 20 2<ret>'
-#map global normal <c-b> ': smooth-scroll u 0 %val{count} 20 2<ret>'
+#map global normal <c-d> ': smooth-scroll  0.5 40 2<ret>'
+#map global normal <c-u> ': smooth-scroll -0.5 40 2<ret>'
+#map global normal <c-f> ': smooth-scroll  1.0 20 2<ret>'
+#map global normal <c-b> ': smooth-scroll -1.0 20 2<ret>'

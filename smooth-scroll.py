@@ -55,11 +55,12 @@ class KakSender:
         return str_length.to_bytes(4, byteorder=sys.byteorder)
 
 
-def scroll_once(sender: KakSender, direction: str, speed: int, duration: float) -> None:
+def scroll_once(sender: KakSender, step: int, duration: float) -> None:
     """Send a scroll event to Kakoune client and make sure it takes at least
     `duration` seconds."""
     t_start = time.time()
-    keys = f"{speed}j{speed}vj" if direction == 'd' else f"{speed}k{speed}vk"
+    speed = abs(step)
+    keys = f"{speed}j{speed}vj" if step > 0 else f"{speed}k{speed}vk"
     sender.send_keys(keys)
     t_end = time.time()
     elapsed = t_end - t_start
@@ -67,7 +68,7 @@ def scroll_once(sender: KakSender, direction: str, speed: int, duration: float) 
         time.sleep(duration - elapsed)
 
 
-def inertial_scroll(sender: KakSender, direction: str, n_lines: int, duration: float) -> None:
+def inertial_scroll(sender: KakSender, target: int, duration: float) -> None:
     """
     Do inertial scrolling with initial velocity decreasing linearly at each
     step towards zero. Per-step scrolling duration d_i is the inverse of the
@@ -79,44 +80,47 @@ def inertial_scroll(sender: KakSender, direction: str, n_lines: int, duration: f
 
     where d_i = 1/v_i and v_i = v_1*(S-i+1)/S.
     """
+    n_lines, step = abs(target), 1 if target > 0 else -1
     velocity = n_lines * sum(1. / x for x in range(2, n_lines + 1)) \
         / ((n_lines - 1) * duration)
     d_velocity = velocity / n_lines
     for i in range(n_lines):
-        scroll_once(sender, direction, 1, 1 / velocity * (i < n_lines - 1))
+        scroll_once(sender, step, 1 / velocity * (i < n_lines - 1))
         velocity -= d_velocity
 
 
 def main() -> None:
     """
     Do smooth scrolling using KakSender methods. Expected positional arguments:
-        direction: 'd' for down or 'u' for up
-        half:      0 for full screen scroll (<c-f>/<c-b>), 1 for half (<c-d>/<c-u>)
-        count:     input count to map, 0 defaults to 1
-        duration:  amount of time between each scroll tick, in milliseconds
-        speed:     number of lines to scroll with each tick, 0 for inertial scrolling
+        amount:   number of lines to scroll as the fraction of a full screen
+                  positive for down, negative for up, e.g. 1 for <c-f>, -0.5 for <c-u>
+        duration: amount of time between each scroll tick, in milliseconds
+        speed:    number of lines to scroll with each tick, 0 for inertial scrolling
     """
     cursor_line = int(os.environ['kak_cursor_line'])
     line_count = int(os.environ['kak_buf_line_count'])
     window_height = int(os.environ['kak_window_height'])
-    direction = sys.argv[1]  # 'd' for down, 'u' for up
-    half = int(sys.argv[2])  # 0 or 1 depending on full or half-screen scroll
-    count = max(1, int(sys.argv[3]))  # 0 means 1
-    duration = float(sys.argv[4]) / 1000  # interval between ticks, convert ms to s
-    speed = int(sys.argv[5])  # number of lines per tick
+    count = max(1, int(os.environ['kak_count']))  # 0 means 1
+    amount = float(sys.argv[1])
+    duration = float(sys.argv[2]) / 1000  # interval between ticks, convert ms to s
+    speed = int(sys.argv[3])  # number of lines per tick
 
-    maxscroll = line_count - cursor_line if direction == 'd' else cursor_line - 1
+    maxscroll = line_count - cursor_line if amount > 0 else cursor_line - 1
     if maxscroll == 0:
         return
 
     sender = KakSender()
-    n_lines = min(count * (window_height - 2) // (1 + half), maxscroll)
+
+    # from src/main.cc#L1398
+    n_lines = min(int(count * abs(amount) * (window_height - 2)), maxscroll)
+    sign = 1 if amount > 0 else -1
+
     if speed > 0 or duration < 1e-3:  # fixed speed scroll
         times = n_lines // max(speed, 1)
         for i in range(times):
-            scroll_once(sender, direction, speed, duration * (i < times - 1))
+            scroll_once(sender, sign * speed, duration * (i < times - 1))
     else:  # inertial scroll
-        inertial_scroll(sender, direction, n_lines, duration)
+        inertial_scroll(sender, sign * n_lines, duration)
 
 
 if __name__ == '__main__':
