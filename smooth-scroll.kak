@@ -1,15 +1,14 @@
 declare-option -hidden str scroll_py %sh{printf "%s" "${kak_source%.kak}.py"}
 declare-option -hidden bool scroll_fallback false
 
-define-command smooth-scroll -params 3 -override -docstring "
-    smooth-scroll <amount> <duration> <speed>: Scroll half or full screen towards given direction smoothly
+define-command smooth-scroll -params 3 -docstring %{
+    smooth-scroll <amount> <duration> <speed>: smoothly scroll <amount> fraction of
+    a full screen taking <speed> steps at a time and waiting <duration> between each step
 
-    Args:
-        amount:   number of lines to scroll as the fraction of a full screen
-                  positive for down, negative for up, e.g. 1 for <c-f>, -0.5 for <c-u>
-        duration: amount of time between each scroll tick, in milliseconds
-        speed:    number of lines to scroll with each tick
-    " %{
+    <amount> is positive for down, negative for up, e.g. 1 for <c-f>, -0.5 for <c-u>
+    <duration> is specified in milliseconds
+    <speed> equal to 0 is special, meaning inertial scrolling instead of fixed speed
+    } %{
     evaluate-commands %sh{
         amount=$1
         duration=$2
@@ -75,10 +74,10 @@ define-command smooth-scroll -params 3 -override -docstring "
 }
 
 # suggested mappings (python)
-map global normal <c-d> ': smooth-scroll  0.5 20 0<ret>'
-map global normal <c-u> ': smooth-scroll -0.5 20 0<ret>'
-map global normal <c-f> ': smooth-scroll  1.0 10 0<ret>'
-map global normal <c-b> ': smooth-scroll -1.0 10 0<ret>'
+#map global normal <c-d> ': smooth-scroll  0.5 20 0<ret>'
+#map global normal <c-u> ': smooth-scroll -0.5 20 0<ret>'
+#map global normal <c-f> ': smooth-scroll  1.0 10 0<ret>'
+#map global normal <c-b> ': smooth-scroll -1.0 10 0<ret>'
 
 # suggested mappings (sh)
 #map global normal <c-d> ': smooth-scroll  0.5 40 2<ret>'
