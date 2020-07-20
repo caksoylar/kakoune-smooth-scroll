@@ -13,7 +13,7 @@ This is similar to myriad plugins such as [comfortable-motion.vim](https://githu
 - Relies on `vj` and `vk` for scrolling, but always moves the cursor unlike native `<c-d>/<c-u>` et al.
 This is to avoid issues with scrolling across wrapped lines similar to [kakoune#1517](https://github.com/mawww/kakoune/issues/1517).
 - For optimal performance it uses a Python implementation which requires Python 3.6+ in path, falling back to `sh` if not available
-  - This implementation utilizes Kakoune's internal [remote API](https://github.com/mawww/kakoune/blob/master/src/remote.hh), so it is potentially unstable
+  - This implementation utilizes Kakoune's internal [remote API](https://github.com/mawww/kakoune/blob/master/src/remote.hh), so it may break with future Kakoune versions
   - A more performant implementation with pure `kak`/`sh` should be possible if [timer hooks](https://github.com/mawww/kakoune/issues/2337#issuecomment-416531650) become available
 
 ## Installation
