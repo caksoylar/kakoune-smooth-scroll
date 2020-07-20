@@ -1,5 +1,5 @@
 # kakoune-smooth-scroll
-Smooth scrolling for Kakoune editor, with inertial movement
+Smooth scrolling for the [Kakoune](https://kakoune.org) text editor, with inertial movement
 
 <a href="https://asciinema.org/a/348495?autoplay=1&loop=1" target="_blank"><img src="https://asciinema.org/a/348495.svg" width="600"/></a>
 
