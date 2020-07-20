@@ -1,7 +1,7 @@
 # kakoune-smooth-scroll
 Smooth scrolling for Kakoune editor, with inertial movement
 
-![](gif)
+[![asciicast](https://asciinema.org/a/qU1IKBup1B70Yc5NDJt7Wa538.svg)](https://asciinema.org/a/qU1IKBup1B70Yc5NDJt7Wa538)
 
 This plugin implements smooth scrolling similar to various plugins for Vim/Emacs etc. such as [vim-smooth-scroll](https://github.com/terryma/vim-smooth-scroll).
 It gives you better visual feedback and arguably helps you preserve your "sense of place" when making large jumps such as when using `<c-f>/<c-b>` keys.
@@ -11,13 +11,13 @@ This is similar to myriad plugins such as [comfortable-motion.vim](https://githu
 
 ## Caveats
 - Relies on `vj` and `vk` for scrolling, but always moves the cursor unlike native `<c-d>/<c-u>` et al.
-This is to avoid issues with scrolling through wrapped lines similar to [kakoune#1517](https://github.com/mawww/kakoune/issues/1517).
+This is to avoid issues with scrolling across wrapped lines similar to [kakoune#1517](https://github.com/mawww/kakoune/issues/1517).
 - For optimal performance it uses a Python implementation which requires Python 3.6+ in path, falling back to `sh` if not available
   - This implementation also utilizes Kakoune's internal [remote API](https://github.com/mawww/kakoune/blob/master/src/remote.hh), so it is potentially unstable
-  - A more performant implementation with pure kak/sh should be possible if and when [timer hooks](https://github.com/mawww/kakoune/issues/2337#issuecomment-416531650) become available in Kakoune
+  - A more performant implementation with pure `kak`/`sh` should be possible if [timer hooks](https://github.com/mawww/kakoune/issues/2337#issuecomment-416531650) become available
 
 ## Installation
-Download `smooth-scroll.kak` and `smooth-scroll.py` to your `autoload` folder, e.g. `~/.config/kak/autoload`. If you are using [plug.kak](https://gitlab.com/andreyorst/plug.kak):
+Download `smooth-scroll.kak` and `smooth-scroll.py` to your `autoload` folder, e.g. into `~/.config/kak/autoload`. If you are using [plug.kak](https://gitlab.com/andreyorst/plug.kak):
 ```kak
 plug "caksoylar/kakoune-smooth-scroll" config %{
      # mappings here
