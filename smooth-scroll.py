@@ -74,7 +74,7 @@ def inertial_scroll(sender: KakSender, target: int, duration: float) -> None:
     step towards zero. Per-step scrolling duration d_i is the inverse of the
     instantaneous velocity v_i. Compute initial velocity v_1 such that the
     total duration (omitting the final step) matches the linear scrolling
-    duration. For S = n_lines this is given by solving the formula
+    duration. For S = abs(target) this is obtained by solving the formula
 
         (S-1) * duration = sum_{i=1}^{S-1} d_i
 
