@@ -106,14 +106,9 @@ def inertial_scroll(sender: KakSender, target: int, duration: float) -> None:
 def main() -> None:
     """
     Do smooth scrolling using KakSender methods. Expected positional arguments:
-        amount:   number of lines to scroll as the fraction of a full screen
-                  positive for down, negative for up, e.g. 1 for <c-f>, -0.5 for <c-u>
-        duration: amount of time between each scroll tick, in milliseconds
-        speed:    number of lines to scroll with each tick, 0 for inertial scrolling
+        amount:   number of lines to scroll; positive for down, negative for up
     """
-    initial_window = sys.argv[1].split()
-    new_window = sys.argv[2].split()
-    selections = os.environ['kak_selections_desc']
+    amount = int(sys.argv[1])
     options = parse_options("scroll_options")
     duration = (
         float(options["duration"]) / 1000
@@ -122,20 +117,10 @@ def main() -> None:
 
     sender = KakSender()
 
-    # make cursor invisible to make scroll less jarring
-    sender.send_keys("<space>")
-    sender.send_cmd(
-        "set-face window PrimaryCursor @default; set-face window PrimaryCursorEol @default",
-        client=True,
-    )
-
-    amount = int(new_window[0]) - int(initial_window[0])
     n_lines = abs(amount)
     sign = 1 if amount > 0 else -1
 
-    scroll_once(sender, -amount, 0)  # scroll back to initial position
-
-    # smoothly scroll back
+    # smoothly scroll to target
     if speed > 0 or duration < 1e-3:  # fixed speed scroll
         times = n_lines // max(speed, 1)
         for i in range(times):
@@ -143,13 +128,8 @@ def main() -> None:
     else:  # inertial scroll
         inertial_scroll(sender, sign * n_lines, duration)
 
-    # restore selections, cursor face and note we are done
-    sender.send_cmd(f"select {selections}", client=True)
-    sender.send_cmd(
-        "unset-face window PrimaryCursor; unset-face window PrimaryCursorEol",
-        client=True
-    )
-    sender.send_cmd("set-option global scroll_running false")
+    # note we are done
+    sender.send_cmd("set-option window scroll_running false", client=True)
 
 
 if __name__ == '__main__':
