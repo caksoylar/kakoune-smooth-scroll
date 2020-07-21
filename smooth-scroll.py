@@ -25,7 +25,7 @@ class KakSender:
             runtime_path = os.path.join(xdg_runtime_dir, 'kakoune')
         self.socket_path = os.path.join(runtime_path, self.session)
 
-    def send_cmd(self, cmd: str) -> bool:
+    def send_cmd(self, cmd: str, client: bool = False) -> bool:
         """
         Send a command string to the Kakoune session. Sent data is a
         concatenation of:
@@ -37,6 +37,8 @@ class KakSender:
              - Command string
         Return whether the communication was successful.
         """
+        if client:
+            cmd = f"evaluate-commands -client {self.client} %😬{cmd}😬"
         b_cmd = cmd.encode('utf-8')
         sock = socket.socket(socket.AF_UNIX)
         sock.connect(self.socket_path)
@@ -53,6 +55,15 @@ class KakSender:
     @staticmethod
     def _get_length_bytes(str_length: int) -> bytes:
         return str_length.to_bytes(4, byteorder=sys.byteorder)
+
+
+def parse_options(option_name: str) -> dict:
+    """Parse a Kakoune map option and return a str-to-str dict."""
+    items = [
+        elt.split('=', maxsplit=1)
+        for elt in os.environ[f"kak_opt_{option_name}"].split()
+    ]
+    return {v[0]: v[1] for v in items}
 
 
 def scroll_once(sender: KakSender, step: int, duration: float) -> None:
@@ -81,8 +92,11 @@ def inertial_scroll(sender: KakSender, target: int, duration: float) -> None:
     where d_i = 1/v_i and v_i = v_1*(S-i+1)/S.
     """
     n_lines, step = abs(target), 1 if target > 0 else -1
-    velocity = n_lines * sum(1. / x for x in range(2, n_lines + 1)) \
+    velocity = (
+        n_lines
+        * sum(1.0 / x for x in range(2, n_lines + 1))
         / ((n_lines - 1) * duration)
+    )
     d_velocity = velocity / n_lines
     for i in range(n_lines):
         scroll_once(sender, step, 1 / velocity * (i < n_lines - 1))
@@ -97,30 +111,45 @@ def main() -> None:
         duration: amount of time between each scroll tick, in milliseconds
         speed:    number of lines to scroll with each tick, 0 for inertial scrolling
     """
-    cursor_line = int(os.environ['kak_cursor_line'])
-    line_count = int(os.environ['kak_buf_line_count'])
-    window_height = int(os.environ['kak_window_height'])
-    count = max(1, int(os.environ['kak_count']))  # 0 means 1
-    amount = float(sys.argv[1])
-    duration = float(sys.argv[2]) / 1000  # interval between ticks, convert ms to s
-    speed = int(sys.argv[3])  # number of lines per tick
-
-    maxscroll = line_count - cursor_line if amount > 0 else cursor_line - 1
-    if maxscroll == 0:
-        return
+    initial_window = sys.argv[1].split()
+    new_window = sys.argv[2].split()
+    selections = os.environ['kak_selections_desc']
+    options = parse_options("scroll_options")
+    duration = (
+        float(options["duration"]) / 1000
+    )  # interval between ticks, convert ms to s
+    speed = int(options["speed"])  # number of lines per tick
 
     sender = KakSender()
 
-    # from src/main.cc#L1398
-    n_lines = min(int(count * abs(amount) * (window_height - 2)), maxscroll)
+    # make cursor invisible to make scroll less jarring
+    sender.send_keys("<space>")
+    sender.send_cmd(
+        "set-face window PrimaryCursor @default; set-face window PrimaryCursorEol @default",
+        client=True,
+    )
+
+    amount = int(new_window[0]) - int(initial_window[0])
+    n_lines = abs(amount)
     sign = 1 if amount > 0 else -1
 
+    scroll_once(sender, -amount, 0)  # scroll back to initial position
+
+    # smoothly scroll back
     if speed > 0 or duration < 1e-3:  # fixed speed scroll
         times = n_lines // max(speed, 1)
         for i in range(times):
             scroll_once(sender, sign * speed, duration * (i < times - 1))
     else:  # inertial scroll
         inertial_scroll(sender, sign * n_lines, duration)
+
+    # restore selections, cursor face and note we are done
+    sender.send_cmd(f"select {selections}", client=True)
+    sender.send_cmd(
+        "unset-face window PrimaryCursor; unset-face window PrimaryCursorEol",
+        client=True
+    )
+    sender.send_cmd("set-option global scroll_running false")
 
 
 if __name__ == '__main__':

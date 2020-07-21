@@ -1,86 +1,30 @@
 declare-option -hidden str scroll_py %sh{printf "%s" "${kak_source%.kak}.py"}
 declare-option -hidden bool scroll_fallback false
+declare-option -hidden bool scroll_running false
+declare-option -hidden str scroll_window "-100 0 0 0"
+declare-option -hidden str-list scroll_selections
+declare-option str-to-str-map scroll_options speed=0 duration=10
 
-define-command smooth-scroll -params 3 -docstring %{
-    smooth-scroll <amount> <duration> <speed>: smoothly scroll <amount> fraction of
-    a full screen taking <speed> steps at a time and waiting <duration> between each step
+remove-hooks global scroll 
+hook -group scroll global NormalIdle .* smooth-scroll
+hook -group scroll global NormalKey .* smooth-scroll
 
-    <amount> is positive for down, negative for up, e.g. 1 for <c-f>, -0.5 for <c-u>
-    <duration> is specified in milliseconds
-    <speed> equal to 0 is special, meaning inertial scrolling instead of fixed speed
-    } %{
+define-command smooth-scroll -override %{
     evaluate-commands %sh{
-        amount=$1
-        duration=$2
-        speed=$3
-        # echo "echo -debug $kak_count"
-
-        # try to run the python version
-        if type python3 >/dev/null 2>&1 && [ -f "$kak_opt_scroll_py" ]; then
-            python3 "$kak_opt_scroll_py" "$amount" "$duration" "$speed" >/dev/null 2>&1 </dev/null &
-            return
+        if [ "$kak_window_range" != "$kak_opt_scroll_window" -a "$kak_opt_scroll_running" = "false" ]; then
+            printf '%s\n' "echo -debug $kak_window_range -> $kak_opt_scroll_window"
+            printf '%s\n' "set-option window scroll_selections %val{selections_desc}"
+            diff=$(( ${kak_window_range%% *} - ${kak_opt_scroll_window%% *} ))
+            selections=$kak_selections_desc
+            options=$kak_opt_scroll_options
+            session=$kak_session
+            client=$kak_client
+            if [ "${diff#-}" -gt 10 ]; then
+                printf '%s\n' "echo -debug -- $diff"
+                printf '%s\n' "set-option global scroll_running true"
+                python3 "$kak_opt_scroll_py" "$kak_opt_scroll_window" "$kak_window_range" >/dev/null 2>&1 </dev/null &
+            fi
         fi
-
-        # fall back to pure sh
-        if [ "$kak_opt_scroll_fallback" = "false" ]; then
-            printf '%s\n' "set-option global scroll_fallback true"
-            echo "echo -debug kakoune-smooth-scroll: WARNING -- cannot execute python version, falling back to pure sh"
-        fi
-
-        abs_amount=${amount#-}
-        if [ "$kak_count" -eq 0 ]; then
-            count=1
-        else
-            count=$kak_count
-        fi
-        if [ "$speed" -eq 0 ]; then
-            speed=1
-        fi
-        if [ "$abs_amount" = "$amount" ]; then
-            maxscroll=$(( kak_buf_line_count - kak_cursor_line ))
-            keys="${speed}j${speed}vj"
-        else
-            maxscroll=$(( kak_cursor_line - 1 ))
-            keys="${speed}k${speed}vk"
-        fi
-        if [ $maxscroll -eq 0 ]; then
-            return
-        fi
-        cmd="printf 'execute-keys -client %s %s\\n' ""$kak_client"" ""$keys"" | kak -p ""$kak_session"""
-
-        toscroll=$(echo "$count * $abs_amount * ($kak_window_height - 2) / 1" | bc)
-        if [ "$maxscroll" -lt "$toscroll" ]; then
-            toscroll=$maxscroll
-        fi
-
-        times=$(( toscroll / speed ))
-
-        (
-            i=0
-            t1=$(date +%s.%N)
-            while [ $i -lt $times ]; do
-                eval "$cmd"
-                t2=$(date +%s.%N)
-                sleep_for=$(printf 'scale=3; %f/1000 - (%f - %f)\n' "$duration" "$t2" "$t1" | bc)
-                if [ "${sleep_for#-}" = "$sleep_for" ]; then
-                    sleep "$sleep_for"
-                fi
-                t1=$t2
-                i=$(( i + 1 ))
-            done
-        ) >/dev/null 2>&1 </dev/null &
     }
-
+    set-option window scroll_window %val{window_range}
 }
-
-# suggested mappings (python)
-#map global normal <c-d> ': smooth-scroll  0.5 20 0<ret>'
-#map global normal <c-u> ': smooth-scroll -0.5 20 0<ret>'
-#map global normal <c-f> ': smooth-scroll  1.0 10 0<ret>'
-#map global normal <c-b> ': smooth-scroll -1.0 10 0<ret>'
-
-# suggested mappings (sh)
-#map global normal <c-d> ': smooth-scroll  0.5 40 2<ret>'
-#map global normal <c-u> ': smooth-scroll -0.5 40 2<ret>'
-#map global normal <c-f> ': smooth-scroll  1.0 20 2<ret>'
-#map global normal <c-b> ': smooth-scroll -1.0 20 2<ret>'
