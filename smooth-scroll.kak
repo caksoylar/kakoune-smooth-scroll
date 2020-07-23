@@ -19,6 +19,7 @@ define-command smooth-scroll-enable -override %{
 
     hook -group scroll window NormalIdle .* smooth-scroll
     # hook -group scroll window NormalKey .* smooth-scroll
+    # hook -group scroll window RawKey .* smooth-scroll
 
     set-option window scroll_running false
     set-option window scroll_window %val{window_range}
@@ -34,7 +35,8 @@ define-command smooth-scroll-enable -override %{
     hook -group scroll window WinSetOption scroll_running=true %{
         # make cursor invisible to make scroll less jarring
         set-face window PrimaryCursor @default
-        set-face window PrimaryCursorEol @default"
+        set-face window PrimaryCursorEol @default
+        set-face window LineNumberCursor @LineNumbers
     }
 
     hook -group scroll window WinSetOption scroll_running=false %{
@@ -44,6 +46,7 @@ define-command smooth-scroll-enable -override %{
         }
         unset-face window PrimaryCursor
         unset-face window PrimaryCursorEol
+        unset-face window LineNumberCursor
     }
 }
 
@@ -61,9 +64,9 @@ define-command smooth-scroll -hidden -override %{
                 # scroll back to original position
                 printf '%s\n' "execute-keys <space>"
                 if [ "$abs_diff" = "$diff" ]; then
-                    printf '%s\n' "execute-keys ${abs_diff}k${abs_diff}vk"
+                    printf '%s\n' "execute-keys ${abs_diff}vk"
                 else
-                    printf '%s\n' "execute-keys ${abs_diff}j${abs_diff}vj"
+                    printf '%s\n' "execute-keys ${abs_diff}vj"
                 fi
 
                 # scroll to new position smoothly
