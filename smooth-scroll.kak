@@ -5,7 +5,7 @@ declare-option -hidden str scroll_client
 declare-option -hidden str-list scroll_selections
 
 # user-facing
-declare-option str-to-str-map scroll_options speed=0 duration=10
+declare-option str-to-str-map scroll_options speed=0 interval=10 max_duration=1000
 
 define-command smooth-scroll-disable -override %{
     remove-hooks window scroll

@@ -66,20 +66,20 @@ def parse_options(option_name: str) -> dict:
     return {v[0]: v[1] for v in items}
 
 
-def scroll_once(sender: KakSender, step: int, duration: float) -> None:
+def scroll_once(sender: KakSender, step: int, interval: float) -> None:
     """Send a scroll event to Kakoune client and make sure it takes at least
-    `duration` seconds."""
+    `interval` seconds."""
     t_start = time.time()
     speed = abs(step)
     keys = f"{speed}j{speed}vj" if step > 0 else f"{speed}k{speed}vk"
     sender.send_keys(keys)
     t_end = time.time()
     elapsed = t_end - t_start
-    if elapsed < duration:
-        time.sleep(duration - elapsed)
+    if elapsed < interval:
+        time.sleep(interval - elapsed)
 
 
-def inertial_scroll(sender: KakSender, target: int, duration: float) -> None:
+def inertial_scroll(sender: KakSender, target: int, interval: float) -> None:
     """
     Do inertial scrolling with initial velocity decreasing linearly at each
     step towards zero. Per-step scrolling duration d_i is the inverse of the
@@ -87,7 +87,7 @@ def inertial_scroll(sender: KakSender, target: int, duration: float) -> None:
     total duration (omitting the final step) matches the linear scrolling
     duration. For S = abs(target) this is obtained by solving the formula
 
-        (S-1) * duration = sum_{i=1}^{S-1} d_i
+        (S-1) * interval = sum_{i=1}^{S-1} d_i
 
     where d_i = 1/v_i and v_i = v_1*(S-i+1)/S.
     """
@@ -95,7 +95,7 @@ def inertial_scroll(sender: KakSender, target: int, duration: float) -> None:
     velocity = (
         n_lines
         * sum(1.0 / x for x in range(2, n_lines + 1))
-        / ((n_lines - 1) * duration)
+        / ((n_lines - 1) * interval)
     )
     d_velocity = velocity / n_lines
     for i in range(n_lines):
@@ -110,23 +110,25 @@ def main() -> None:
     """
     amount = int(sys.argv[1])
     options = parse_options("scroll_options")
-    duration = (
-        float(options["duration"]) / 1000
+    interval = (
+        float(options.get("interval", 10)) / 1000
     )  # interval between ticks, convert ms to s
-    speed = int(options["speed"])  # number of lines per tick
+    speed = int(options.get("speed", 0))  # number of lines per tick
+    max_duration = int(options.get("max_duration", 1000)) / 1000  # max amount of time to scroll
 
     sender = KakSender()
 
     n_lines = abs(amount)
+    interval = min(interval,  max_duration / (n_lines - 1))
     sign = 1 if amount > 0 else -1
 
     # smoothly scroll to target
-    if speed > 0 or duration < 1e-3:  # fixed speed scroll
+    if speed > 0 or interval < 1e-3:  # fixed speed scroll
         times = n_lines // max(speed, 1)
         for i in range(times):
-            scroll_once(sender, sign * speed, duration * (i < times - 1))
+            scroll_once(sender, sign * speed, interval * (i < times - 1))
     else:  # inertial scroll
-        inertial_scroll(sender, sign * n_lines, duration)
+        inertial_scroll(sender, sign * n_lines, interval)
 
     # note we are done
     sender.send_cmd("set-option window scroll_running false", client=True)
