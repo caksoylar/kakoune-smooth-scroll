@@ -93,7 +93,10 @@ define-command smooth-scroll-move -params 1 -hidden -override %{
             echo "echo -debug kakoune-smooth-scroll: WARNING -- cannot execute python version, falling back to pure sh"
         fi
 
-        eval $kak_opt_scroll_options
+        eval "$kak_opt_scroll_options"
+        speed=${speed:-0}
+        interval=${interval:-10}
+        max_duration=${max_duration:-1000}
         if [ "$speed" -eq 0 ]; then
             speed=1
         fi
