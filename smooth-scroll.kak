@@ -19,7 +19,8 @@ define-command smooth-scroll-enable -override %{
 
     hook -group scroll window NormalIdle .* smooth-scroll
     # hook -group scroll window NormalKey .* smooth-scroll
-    # hook -group scroll window RawKey .* smooth-scroll
+    # hook -group scroll window ModeChange pop:.*:normal smooth-scroll
+    # hook -group scroll window RawKey [^:/ia].* smooth-scroll
 
     set-option window scroll_running false
     set-option window scroll_window %val{window_range}
@@ -43,6 +44,7 @@ define-command smooth-scroll-enable -override %{
         # restore cursor highlighting and original selection
         evaluate-commands -client %opt{scroll_client} %{
             select %opt{scroll_selections}
+            set-option window scroll_window %val{window_range}
         }
         unset-face window PrimaryCursor
         unset-face window PrimaryCursorEol
@@ -53,10 +55,10 @@ define-command smooth-scroll-enable -override %{
 define-command smooth-scroll -hidden -override %{
     evaluate-commands %sh{
         if [ "$kak_window_range" != "$kak_opt_scroll_window" ] && [ "$kak_opt_scroll_running" = "false" ]; then
-            # printf '%s\n' "echo -debug $kak_window_range -> $kak_opt_scroll_window"
             diff=$(( ${kak_window_range%% *} - ${kak_opt_scroll_window%% *} ))
             abs_diff=${diff#-}
             if [ "$abs_diff" -gt 10 ]; then
+                # printf '%s\n' "echo -debug $kak_opt_scroll_window -> $kak_window_range"
                 printf '%s\n' "set-option window scroll_selections %val{selections_desc}"
                 printf '%s\n' "set-option window scroll_window %val{window_range}"
                 printf '%s\n' "set-option window scroll_running true"
@@ -71,9 +73,9 @@ define-command smooth-scroll -hidden -override %{
 
                 # scroll to new position smoothly
                 printf '%s\n' "smooth-scroll-move $diff"
-                return
+            else
+                printf '%s\n' "set-option window scroll_window %val{window_range}"
             fi
-            printf '%s\n' "set-option window scroll_window %val{window_range}"
         fi
     }
 }
