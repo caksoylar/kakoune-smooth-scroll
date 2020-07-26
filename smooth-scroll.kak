@@ -7,9 +7,27 @@ declare-option -hidden bool scroll_fallback false
 
 # user-facing
 declare-option str-to-str-map scroll_options speed=0 interval=10 max_duration=1000
+declare-option str-list scroll_keys_normal <c-f> <c-b> <c-d> <c-u> <pageup> <pagedown> ( ) m <a-semicolon> <percent> n <a-n> N <a-N>
+declare-option str-list scroll_keys_goto g j k e .
+declare-option str-list scroll_keys_view v c m t
 
 define-command smooth-scroll-disable -override %{
-    remove-hooks window scroll
+    evaluate-commands %sh{
+        eval "set -- $kak_quoted_opt_scroll_keys_normal"
+        for key; do
+            printf 'unmap window normal %s\n' "$key"
+        done
+
+        eval "set -- $kak_quoted_opt_scroll_keys_goto"
+        for key; do
+            printf 'unmap window goto %s\n' "$key"
+        done
+
+        eval "set -- $kak_quoted_opt_scroll_keys_view"
+        for key; do
+            printf 'unmap window view %s\n' "$key"
+        done
+    }
     unset-face window PrimaryCursor
     unset-face window PrimaryCursorEol
 }
@@ -17,13 +35,27 @@ define-command smooth-scroll-disable -override %{
 define-command smooth-scroll-enable -override %{
     smooth-scroll-disable
 
-    hook -group scroll window NormalIdle .* smooth-scroll
-    # hook -group scroll window NormalKey .* smooth-scroll
-    # hook -group scroll window ModeChange pop:.*:normal smooth-scroll
-    # hook -group scroll window RawKey [^:/ia].* smooth-scroll
+    evaluate-commands %sh{
+        eval "set -- $kak_quoted_opt_scroll_keys_normal"
+        for key; do
+            rhs=$(echo "$key" | sed -e 's/^</<lt>/' -e 's/>$/<gt>/')
+            printf 'map window normal %s ": smooth-scroll-do-key %s<ret>"\n' "$key" "$rhs"
+        done
+
+        eval "set -- $kak_quoted_opt_scroll_keys_goto"
+        for key; do
+            rhs=$(echo "$key" | sed -e 's/^</<lt>/' -e 's/>$/<gt>/')
+            printf 'map window goto %s "<esc>: smooth-scroll-do-key g%s<ret>"\n' "$key" "$rhs"
+        done
+
+        eval "set -- $kak_quoted_opt_scroll_keys_view"
+        for key; do
+            rhs=$(echo "$key" | sed -e 's/^</<lt>/' -e 's/>$/<gt>/')
+            printf 'map window view %s "<esc>: smooth-scroll-do-key v%s<ret>"\n' "$key" "$rhs"
+        done
+    }
 
     set-option window scroll_running false
-    set-option window scroll_window %val{window_range}
     set-option window scroll_client %val{client}
 
     # hook -group scroll window WinSetOption scroll_selections=.* %{
@@ -44,7 +76,6 @@ define-command smooth-scroll-enable -override %{
         # restore cursor highlighting and original selection
         evaluate-commands -client %opt{scroll_client} %{
             select %opt{scroll_selections}
-            set-option window scroll_window %val{window_range}
         }
         unset-face window PrimaryCursor
         unset-face window PrimaryCursorEol
@@ -52,31 +83,36 @@ define-command smooth-scroll-enable -override %{
     }
 }
 
-define-command smooth-scroll -hidden -override %{
+define-command smooth-scroll-do-key -params 1 -hidden -override %{
+    echo -debug "triggered %arg{1}"
+    evaluate-commands -draft %{
+        execute-keys %arg{1}
+        # eval -client %opt{scroll_client} %{
+        set-option window scroll_window %val{window_range}
+        set-option window scroll_selections %val{selections_desc}
+        # }
+    }
+    echo -debug "%val{window_range} -> %opt{scroll_window}"
     evaluate-commands %sh{
         if [ "$kak_window_range" != "$kak_opt_scroll_window" ] && [ "$kak_opt_scroll_running" = "false" ]; then
-            diff=$(( ${kak_window_range%% *} - ${kak_opt_scroll_window%% *} ))
+            # printf '%s\n' "echo -debug $kak_opt_scroll_window -> $kak_window_range"
+            diff=$(( ${kak_opt_scroll_window%% *} - ${kak_window_range%% *} ))
             abs_diff=${diff#-}
-            if [ "$abs_diff" -gt 10 ]; then
-                # printf '%s\n' "echo -debug $kak_opt_scroll_window -> $kak_window_range"
-                printf '%s\n' "set-option window scroll_selections %val{selections_desc}"
-                printf '%s\n' "set-option window scroll_window %val{window_range}"
+            if [ "$abs_diff" -gt 1 ]; then
+                printf '%s\n' "echo -debug diff: $diff"
+
+                # scrolloff=$kak_opt_scrolloff
+                # printf '%s\n' "set-option window scrolloff 0,0"
                 printf '%s\n' "set-option window scroll_running true"
 
-                # scroll back to original position
                 printf '%s\n' "execute-keys <space>"
-                if [ "$abs_diff" = "$diff" ]; then
-                    printf '%s\n' "execute-keys ${abs_diff}vk"
-                else
-                    printf '%s\n' "execute-keys ${abs_diff}vj"
-                fi
 
                 # scroll to new position smoothly
                 printf '%s\n' "smooth-scroll-move $diff"
-            else
-                printf '%s\n' "set-option window scroll_window %val{window_range}"
+                return
             fi
         fi
+        printf '%s\n' "select $kak_opt_scroll_selections"
     }
 }
 
