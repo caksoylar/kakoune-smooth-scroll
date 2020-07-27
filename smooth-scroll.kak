@@ -1,49 +1,64 @@
-# user-facing
-declare-option str-to-str-map scroll_options speed=0 interval=10 max_duration=1000
-declare-option str-list scroll_keys_normal <c-f> <c-b> <c-d> <c-u> <pageup> <pagedown> ( ) m M <a-semicolon> <percent> n <a-n> N <a-N>
-declare-option str-list scroll_keys_goto g j k e .
-declare-option str-list scroll_keys_view v c m t
-declare-option str-list scroll_keys_object p i B { }
+# user-facing options
+declare-option -docstring %{
+    space-separated list of <key>=<value> pairs that specify the behavior of
+    smooth scroll.
+
+    Following keys are accepted:
+        speed:        number of lines to scroll per tick, 0 for inertial
+                      scrolling (default: 0)
+        interval:     average milliseconds between each scroll (default: 10)
+        max_duration: maximum duration of a scroll in milliseconds (default: 500)
+} str-to-str-map scroll_options speed=0 interval=10 max_duration=500
+
+declare-option -docstring %{
+    list of keys to apply smooth scrolling in normal mode. Specify only keys
+    that do not modify the buffer. All existing mappings for those keys will
+    be overridden.
+
+    Default:
+        <c-f> <c-b> <c-d> <c-u> <pageup> <pagedown> ( ) m M <a-semicolon>
+        <percent> n <a-n> N <a-N>
+} str-list scroll_keys_normal <c-f> <c-b> <c-d> <c-u> <pageup> <pagedown> ( ) m M <a-semicolon> <percent> n <a-n> N <a-N>
+
+declare-option -docstring %{
+    list of keys to apply smooth scrolling in goto mode. All existing
+    mappings for those keys will be overridden.
+
+    Default:
+        g j k e .
+} str-list scroll_keys_goto g j k e .
+
+declare-option -docstring %{
+    list of keys to apply smooth scrolling in object mode. All existing
+    mappings for those keys will be overridden.
+
+    Default:
+        p i B { }
+} str-list scroll_keys_object p i B { }
+
+# declare-option -docstring %{
+#     list of keys to apply smooth scrolling in view mode. All existing
+#     mappings for those keys will be overridden.
+
+#     Default:
+#         v c m t
+# } str-list scroll_keys_view v c m t
 
 # internal
-declare-option -hidden str scroll_py %sh{printf "%s" "${kak_source%.kak}.py"}
-declare-option -hidden bool scroll_fallback false
-declare-option -hidden str scroll_running ""
-declare-option -hidden str scroll_window
-declare-option -hidden str scroll_client
-declare-option -hidden str scroll_mode
-declare-option -hidden str-list scroll_selections
+declare-option -hidden str scroll_py %sh{printf "%s" "${kak_source%.kak}.py"}  # python script path
+declare-option -hidden bool scroll_fallback false  # remember if we fell back to sh impl
+declare-option -hidden str scroll_running ""       # pid of scroll process if it running
+declare-option -hidden str scroll_window           # new location after a key press
+declare-option -hidden str-list scroll_selections  # new selections after a key press
+declare-option -hidden str scroll_client           # store for WinSetOption hook which runs in draft context
+declare-option -hidden str scroll_mode             # key we used to enter a mode so we can replicate it
 
-define-command smooth-scroll-disable -override %{
-    evaluate-commands %sh{
-        eval "set -- $kak_quoted_opt_scroll_keys_normal"
-        for key; do
-            printf 'unmap window normal %s\n' "$key"
-        done
-
-        eval "set -- $kak_quoted_opt_scroll_keys_goto"
-        for key; do
-            printf 'unmap window goto %s\n' "$key"
-        done
-
-        eval "set -- $kak_quoted_opt_scroll_keys_view"
-        for key; do
-            printf 'unmap window view %s\n' "$key"
-        done
-
-        eval "set -- $kak_quoted_opt_scroll_keys_object"
-        for key; do
-            printf 'unmap window object %s\n' "$key"
-        done
-    }
-    unset-face window PrimaryCursor
-    unset-face window PrimaryCursorEol
-}
-
-define-command smooth-scroll-enable -override %{
+define-command smooth-scroll-enable -docstring "enable smooth scrolling for window" %{
     smooth-scroll-disable
 
+    # map the list of keys to smoothly scroll for given by the scroll_keys_* options
     evaluate-commands %sh{
+        # normal mode
         eval "set -- $kak_quoted_opt_scroll_keys_normal"
         mode="''"
         for key; do
@@ -51,6 +66,7 @@ define-command smooth-scroll-enable -override %{
             printf 'map window normal %s ": smooth-scroll-do-key %s %s<ret>"\n' "$key" "$rhs" "$mode"
         done
 
+        # goto mode
         mode="%%opt{scroll_mode}"
         eval "set -- $kak_quoted_opt_scroll_keys_goto"
         for key; do
@@ -58,31 +74,26 @@ define-command smooth-scroll-enable -override %{
             printf 'map window goto %s "<esc>: smooth-scroll-do-key %s %s<ret>"\n' "$key" "$rhs" "$mode"
         done
 
-        eval "set -- $kak_quoted_opt_scroll_keys_view"
-        for key; do
-            rhs=$(echo "$key" | sed -e 's/^</<lt>/' -e 's/>$/<gt>/')
-            printf 'map window view %s "<esc>: smooth-scroll-do-key %s %s<ret>"\n' "$key" "$rhs" "$mode"
-        done
-
+        # object mode
         eval "set -- $kak_quoted_opt_scroll_keys_object"
         for key; do
             rhs=$(echo "$key" | sed -e 's/^</<lt>/' -e 's/>$/<gt>/')
             printf 'map window object %s "<esc>: smooth-scroll-do-key %s %s<ret>"\n' "$key" "$rhs" "$mode"
+        done
+
+        # view mode (currently useless)
+        eval "set -- $kak_quoted_opt_scroll_keys_view"
+        for key; do
+            rhs=$(echo "$key" | sed -e 's/^</<lt>/' -e 's/>$/<gt>/')
+            printf 'map window view %s "<esc>: smooth-scroll-do-key %s %s<ret>"\n' "$key" "$rhs" "$mode"
         done
     }
 
     set-option window scroll_running ""
     set-option window scroll_client %val{client}
 
-    # hook -group scroll window WinSetOption scroll_selections=.* %{
-    #     echo -debug "selections: %opt{scroll_selections}"
-    # }
-    # hook -group scroll window WinSetOption scroll_window=.* %{
-    #     echo -debug "window: %opt{scroll_window}"
-    # }
-
-    hook -group scroll window NormalKey [gGvV[\]{}]|<a-a>|<a-i> %{
-        # echo -debug "got key: %val{hook_param}"
+    # remember what key we used to enter a mode so we can replicate it
+    hook -group scroll window NormalKey [gGvV[\]{}]|<a-[ai]> %{
         set-option window scroll_mode %val{hook_param}
     }
 
@@ -114,30 +125,59 @@ define-command smooth-scroll-enable -override %{
     }
 }
 
+define-command smooth-scroll-disable -docstring "disable smooth scrolling for window" %{
+    # undo window-level mappings
+    evaluate-commands %sh{
+        eval "set -- $kak_quoted_opt_scroll_keys_normal"
+        for key; do
+            printf 'unmap window normal %s\n' "$key"
+        done
+
+        eval "set -- $kak_quoted_opt_scroll_keys_goto"
+        for key; do
+            printf 'unmap window goto %s\n' "$key"
+        done
+
+        eval "set -- $kak_quoted_opt_scroll_keys_object"
+        for key; do
+            printf 'unmap window object %s\n' "$key"
+        done
+
+        eval "set -- $kak_quoted_opt_scroll_keys_view"
+        for key; do
+            printf 'unmap window view %s\n' "$key"
+        done
+    }
+    # remove our hooks
+    remove-hooks window scroll
+
+    # restore faces if we somehow didn't before
+    unset-face window PrimaryCursor
+    unset-face window PrimaryCursorEol
+}
+
 define-command smooth-scroll-do-key -params 2 -hidden -override %{
-    # echo -debug "triggered %arg{1} %arg{2}"
+    # execute key in draft context to figure out the final selection and window_range
     evaluate-commands -draft %{
         execute-keys %arg{2} %arg{1}
         set-option window scroll_window %val{window_range}
         set-option window scroll_selections %val{selections_desc}
     }
-    # echo -debug "%val{window_range} -> %opt{scroll_window}"
+
+    # check if we moved the viewport, then smoothly scroll there if we did
     evaluate-commands %sh{
         if [ "$kak_window_range" != "$kak_opt_scroll_window" ] && [ -z "$kak_opt_scroll_running" ]; then
             diff=$(( ${kak_opt_scroll_window%% *} - ${kak_window_range%% *} ))
             abs_diff=${diff#-}
-            if [ "$abs_diff" -gt 1 ]; then
-                # printf '%s\n' "echo -debug diff: $diff"
-
-                printf '%s\n' "set-option window scroll_running true"
-                printf '%s\n' "execute-keys <space>"
-
-                # scroll to new position smoothly
-                printf '%s\n' "smooth-scroll-move $diff"
+            if [ "$abs_diff" -gt 1 ]; then  # we moved the viewport by at least 2
+                # scroll to new position smoothly (selection will be restored when done)
+                printf 'execute-keys <space>\n'
+                printf 'smooth-scroll-move %s\n' "$diff"
                 return
             fi
         fi
-        printf '%s\n' "select $kak_opt_scroll_selections"
+        # we haven't moved the viewport enough so just apply selection 
+        printf 'select %s\n' "$kak_opt_scroll_selections"
     }
 }
 
@@ -153,8 +193,8 @@ define-command smooth-scroll-move -params 1 -hidden -override %{
 
         # fall back to pure sh
         if [ "$kak_opt_scroll_fallback" = "false" ]; then
-            printf '%s\n' "set-option global scroll_fallback true"
-            echo "echo -debug kakoune-smooth-scroll: WARNING -- cannot execute python version, falling back to pure sh"
+            printf 'set-option global scroll_fallback true\n'
+            printf 'echo -debug kakoune-smooth-scroll: WARNING -- cannot execute python version, falling back to pure sh\n'
         fi
 
         eval "$kak_opt_scroll_options"
