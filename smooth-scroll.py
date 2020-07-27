@@ -119,7 +119,7 @@ def main() -> None:
     sender = KakSender()
 
     n_lines = abs(amount)
-    interval = min(interval,  max_duration / (n_lines - 1))
+    interval = min(interval, max_duration / (n_lines - 1))
     sign = 1 if amount > 0 else -1
 
     # smoothly scroll to target
@@ -131,7 +131,7 @@ def main() -> None:
         inertial_scroll(sender, sign * n_lines, interval)
 
     # note we are done
-    sender.send_cmd("set-option window scroll_running false", client=True)
+    sender.send_cmd('set-option window scroll_running ""', client=True)
 
 
 if __name__ == '__main__':

@@ -8,7 +8,7 @@ declare-option str-list scroll_keys_object p i B { }
 # internal
 declare-option -hidden str scroll_py %sh{printf "%s" "${kak_source%.kak}.py"}
 declare-option -hidden bool scroll_fallback false
-declare-option -hidden bool scroll_running false
+declare-option -hidden str scroll_running ""
 declare-option -hidden str scroll_window
 declare-option -hidden str scroll_client
 declare-option -hidden str scroll_mode
@@ -71,7 +71,7 @@ define-command smooth-scroll-enable -override %{
         done
     }
 
-    set-option window scroll_running false
+    set-option window scroll_running ""
     set-option window scroll_client %val{client}
 
     # hook -group scroll window WinSetOption scroll_selections=.* %{
@@ -86,15 +86,25 @@ define-command smooth-scroll-enable -override %{
         set-option window scroll_mode %val{hook_param}
     }
 
-    hook -group scroll window WinSetOption scroll_running=true %{
-        # make cursor invisible to make scroll less jarring
+    # when we exit normal mode, kill the scrolling process if it is currently running
+    hook -group scroll window ModeChange push:normal:.* %{
+        evaluate-commands %sh{
+            if [ -n "$kak_opt_scroll_running" ]; then
+                kill "$kak_opt_scroll_running"
+                printf 'set-option window scroll_running ""\n'
+            fi
+        }
+    }
+
+    # started scrolling, make cursor invisible to make it less jarring
+    hook -group scroll window WinSetOption scroll_running=\d+ %{
         set-face window PrimaryCursor @default
         set-face window PrimaryCursorEol @default
         set-face window LineNumberCursor @LineNumbers
     }
 
-    hook -group scroll window WinSetOption scroll_running=false %{
-        # restore cursor highlighting and original selection
+    # done scrolling, so restore cursor highlighting and original selection
+    hook -group scroll window WinSetOption scroll_running= %{
         evaluate-commands -client %opt{scroll_client} %{
             select %opt{scroll_selections}
         }
@@ -113,8 +123,7 @@ define-command smooth-scroll-do-key -params 2 -hidden -override %{
     }
     # echo -debug "%val{window_range} -> %opt{scroll_window}"
     evaluate-commands %sh{
-        if [ "$kak_window_range" != "$kak_opt_scroll_window" ] && [ "$kak_opt_scroll_running" = "false" ]; then
-            # printf '%s\n' "echo -debug $kak_opt_scroll_window -> $kak_window_range"
+        if [ "$kak_window_range" != "$kak_opt_scroll_window" ] && [ -z "$kak_opt_scroll_running" ]; then
             diff=$(( ${kak_opt_scroll_window%% *} - ${kak_window_range%% *} ))
             abs_diff=${diff#-}
             if [ "$abs_diff" -gt 1 ]; then
@@ -138,6 +147,7 @@ define-command smooth-scroll-move -params 1 -hidden -override %{
         # try to run the python version
         if type python3 >/dev/null 2>&1 && [ -f "$kak_opt_scroll_py" ]; then
             python3 "$kak_opt_scroll_py" "$amount" >/dev/null 2>&1 </dev/null &
+            printf 'set-option window scroll_running %s\n' "$!"
             return
         fi
 
@@ -182,7 +192,8 @@ define-command smooth-scroll-move -params 1 -hidden -override %{
                 fi
                 i=$(( i + 1 ))
             done
-            printf "eval -client %s '%s'\\n" "$kak_client" "set-option window scroll_running false" | kak -p "$kak_session" 
+            printf "eval -client %s '%s'\\n" "$kak_client" 'set-option window scroll_running ""' | kak -p "$kak_session" 
         ) >/dev/null 2>&1 </dev/null &
+        printf 'set-option window scroll_running %s\n' "$!"
     }
 }
