@@ -156,7 +156,7 @@ define-command smooth-scroll-disable -docstring "disable smooth scrolling for wi
     unset-face window PrimaryCursorEol
 }
 
-define-command smooth-scroll-do-key -params 2 -hidden -override %{
+define-command smooth-scroll-do-key -params 2 -hidden %{
     # execute key in draft context to figure out the final selection and window_range
     evaluate-commands -draft %{
         execute-keys %arg{2} %arg{1}
@@ -181,7 +181,7 @@ define-command smooth-scroll-do-key -params 2 -hidden -override %{
     }
 }
 
-define-command smooth-scroll-move -params 1 -hidden -override %{
+define-command smooth-scroll-move -params 1 -hidden %{
     evaluate-commands %sh{
         amount=$1
         # try to run the python version
