@@ -12,7 +12,8 @@ declare-option -docstring %{
 
 declare-option -docstring %{
     list of keys to apply smooth scrolling in normal mode. Specify only keys
-    that do not modify the buffer. All existing mappings for those keys will
+    that do not modify the buffer. If source and destination mappings are different,
+    specify them in the format <src>=<dst>. Existing mappings for source keys will
     be overridden.
 
     Default:
@@ -21,24 +22,27 @@ declare-option -docstring %{
 } str-list scroll_keys_normal <c-f> <c-b> <c-d> <c-u> <pageup> <pagedown> ( ) m M <a-semicolon> <percent> n <a-n> N <a-N>
 
 declare-option -docstring %{
-    list of keys to apply smooth scrolling in goto mode. All existing
-    mappings for those keys will be overridden.
+    list of keys to apply smooth scrolling in goto mode. If source and
+    destination mappings are different, specify them in the format <src>=<dst>.
+    Existing mappings for source keys will be overridden.
 
     Default:
         g j k e .
 } str-list scroll_keys_goto g j k e .
 
 declare-option -docstring %{
-    list of keys to apply smooth scrolling in object mode. All existing
-    mappings for those keys will be overridden.
+    list of keys to apply smooth scrolling in object mode. If source and
+    destination mappings are different, specify them in the format <src>=<dst>.
+    Existing mappings for source keys will be overridden.
 
     Default:
         p i B { }
 } str-list scroll_keys_object p i B { }
 
 # declare-option -docstring %{
-#     list of keys to apply smooth scrolling in view mode. All existing
-#     mappings for those keys will be overridden.
+#     list of keys to apply smooth scrolling in view mode. If source and
+#     destination mappings are different, specify them in the format <src>=<dst>.
+#     Existing mappings for source keys will be overridden.
 
 #     Default:
 #         v c m t
@@ -58,34 +62,16 @@ define-command smooth-scroll-enable -docstring "enable smooth scrolling for wind
 
     # map the list of keys to smoothly scroll for given by the scroll_keys_* options
     evaluate-commands %sh{
-        # normal mode
-        eval "set -- $kak_quoted_opt_scroll_keys_normal"
-        mode="''"
-        for key; do
-            rhs=$(echo "$key" | sed -e 's/^</<lt>/' -e 's/>$/<gt>/')
-            printf 'map window normal %s ": smooth-scroll-do-key %s %s<ret>"\n' "$key" "$rhs" "$mode"
-        done
-
-        # goto mode
-        mode="%%opt{scroll_mode}"
-        eval "set -- $kak_quoted_opt_scroll_keys_goto"
-        for key; do
-            rhs=$(echo "$key" | sed -e 's/^</<lt>/' -e 's/>$/<gt>/')
-            printf 'map window goto %s "<esc>: smooth-scroll-do-key %s %s<ret>"\n' "$key" "$rhs" "$mode"
-        done
-
-        # object mode
-        eval "set -- $kak_quoted_opt_scroll_keys_object"
-        for key; do
-            rhs=$(echo "$key" | sed -e 's/^</<lt>/' -e 's/>$/<gt>/')
-            printf 'map window object %s "<esc>: smooth-scroll-do-key %s %s<ret>"\n' "$key" "$rhs" "$mode"
-        done
-
-        # view mode (currently useless)
-        eval "set -- $kak_quoted_opt_scroll_keys_view"
-        for key; do
-            rhs=$(echo "$key" | sed -e 's/^</<lt>/' -e 's/>$/<gt>/')
-            printf 'map window view %s "<esc>: smooth-scroll-do-key %s %s<ret>"\n' "$key" "$rhs" "$mode"
+        # $kak_quoted_opt_scroll_keys_normal, $kak_quoted_opt_scroll_keys_goto, $kak_quoted_opt_scroll_keys_object
+        for mode in normal goto object; do
+            eval option="\$kak_quoted_opt_scroll_keys_$mode"
+            eval "set -- $option"
+            for key; do
+                # in case both sides of the mapping were given with lhs=rhs, split
+                lhs=${key%%=*}
+                rhs=${key#*=}
+                printf 'smooth-scroll-map-key %s %s %s\n' "$mode" "$lhs" "$rhs"
+            done
         done
     }
 
@@ -128,24 +114,14 @@ define-command smooth-scroll-enable -docstring "enable smooth scrolling for wind
 define-command smooth-scroll-disable -docstring "disable smooth scrolling for window" %{
     # undo window-level mappings
     evaluate-commands %sh{
-        eval "set -- $kak_quoted_opt_scroll_keys_normal"
-        for key; do
-            printf 'unmap window normal %s\n' "$key"
-        done
-
-        eval "set -- $kak_quoted_opt_scroll_keys_goto"
-        for key; do
-            printf 'unmap window goto %s\n' "$key"
-        done
-
-        eval "set -- $kak_quoted_opt_scroll_keys_object"
-        for key; do
-            printf 'unmap window object %s\n' "$key"
-        done
-
-        eval "set -- $kak_quoted_opt_scroll_keys_view"
-        for key; do
-            printf 'unmap window view %s\n' "$key"
+        # $kak_quoted_opt_scroll_keys_normal, $kak_quoted_opt_scroll_keys_goto, $kak_quoted_opt_scroll_keys_object
+        for mode in normal goto object; do
+            eval option="\$kak_quoted_opt_scroll_keys_$mode"
+            eval "set -- $option"
+            for key; do
+                lhs=${key%%=*}
+                printf 'unmap window %s %s\n' "$mode" "$lhs"
+            done
         done
     }
     # remove our hooks
@@ -154,6 +130,25 @@ define-command smooth-scroll-disable -docstring "disable smooth scrolling for wi
     # restore faces if we somehow didn't before
     unset-face window PrimaryCursor
     unset-face window PrimaryCursorEol
+}
+
+define-command smooth-scroll-map-key -params 3 -docstring %{
+    smooth-scroll-map-key <mode> <lhs> <rhs>: map key <lhs> to key <rhs> for
+    mode <mode> and enable smooth scrolling for that operation
+} %{
+    evaluate-commands %sh{
+        mode="$1"
+        if [ "$mode" = "normal" ]; then
+            prefix="''"
+            esc=""
+        else
+            prefix="%%opt{scroll_mode}"
+            esc="<esc>"
+        fi
+        lhs=$2
+        rhs=$(echo "$3" | sed -e 's/^</<lt>/' -e 's/>$/<gt>/')
+        printf 'map window %s %s "%s: smooth-scroll-do-key %s %s<ret>"\n' "$mode" "$lhs" "$esc" "$rhs" "$prefix"
+    }
 }
 
 define-command smooth-scroll-do-key -params 2 -hidden %{
