@@ -154,7 +154,7 @@ define-command smooth-scroll-map-key -params 3 -docstring %{
 define-command smooth-scroll-do-key -params 2 -hidden %{
     # execute key in draft context to figure out the final selection and window_range
     evaluate-commands -draft %{
-        execute-keys %arg{2} %arg{1}
+        execute-keys %val{count} %arg{2} %arg{1}
         set-option window scroll_window %val{window_range}
         set-option window scroll_selections %val{selections_desc}
     }
