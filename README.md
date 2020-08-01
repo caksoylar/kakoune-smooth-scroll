@@ -35,28 +35,28 @@ hook global WinCreate .* %{ hook -once window WinDisplay .* smooth-scroll-enable
 ### Customizing mapped keys
 Keys that are mapped for each mode are customized via the `scroll_keys_normal`, `scroll_keys_goto` and `scroll_keys_object` options. If for a mode the corresponding option is not set, keys that are mapped by default are the following:
 
-| **normal**                                                          |
-| ------                                                              |
-|`<c-f>`, `<pagedown>`, `<c-b>`, `<pageup>`, (scroll one page down/up)|
-|`<c-d>`, `<c-u>` (scroll half a page down/up)                        |
-|`)`, `(` (rotate main selection forward/backward)                    |
-|`m`, `M` (select/extend to next matching character)                  |
-|`<a-semicolon>` (flip direction of selection)                        |
-|`<percent>` (select whole buffer)                                    |
-|`n`, `<a-n>`, `N`, `<a-N>` (select/extend to next/previous match)    |
+| **normal** keys                           | description                              |
+| ------                                    | ------                                   |
+|`<c-f>`, `<pagedown>`, `<c-b>`, `<pageup>` | scroll one page down/up                  |
+|`<c-d>`, `<c-u>`                           | scroll half a page down/up               |
+|`)`, `(`                                   | rotate main selection forward/backward   |
+|`m`, `M`                                   | select/extend to next matching character |
+|`<a-semicolon>` (`<a-;>`)                  | flip direction of selection              |
+|`<percent>` (`%`)                          | select whole buffer                      |
+|`n`, `<a-n>`, `N`, `<a-N>`                 | select/extend to next/previous match     |
 
-| **goto**               |
-| ------                 |
-|`g`, `k` (buffer top)   |
-|`j` (buffer bottom)     |
-|`e` (buffer end)        |
-|`.` (last buffer change)|
+| **goto** keys                             | description                              |
+| ------                                    | ------                                   |
+|`g`, `k`                                   | buffer top                               |
+|`j`                                        | buffer bottom                            |
+|`e`                                        | buffer end                               |
+|`.`                                        | last buffer change                       |
 
-| **object**                 |
-| ------                     |
-|`p` (paragraph)             |
-|`i` (indent)                |
-|`B`, `{`, `}` (braces block)|
+| **object** keys                           | description                              |
+| ------                                    | ------                                   |
+|`p`                                        | paragraph                                |
+|`i`                                        | indent                                   |
+|`B`, `{`, `}`                              | braces block                             |
 
 Default behavior is equivalent to the following configuration:
 
