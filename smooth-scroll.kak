@@ -168,7 +168,7 @@ define-command smooth-scroll-do-key -params 2 -hidden %{
                 # scroll to new position smoothly (selection will be restored when done)
                 printf 'execute-keys <space>\n'
                 printf 'smooth-scroll-move %s\n' "$diff"
-                return
+                exit 0
             fi
         fi
         # we haven't moved the viewport enough so just apply selection 
