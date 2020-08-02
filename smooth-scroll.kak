@@ -183,7 +183,7 @@ define-command smooth-scroll-move -params 1 -hidden %{
         if type python3 >/dev/null 2>&1 && [ -f "$kak_opt_scroll_py" ]; then
             python3 "$kak_opt_scroll_py" "$amount" >/dev/null 2>&1 </dev/null &
             printf 'set-option window scroll_running %s\n' "$!"
-            return
+            exit 0
         fi
 
         # fall back to pure sh
