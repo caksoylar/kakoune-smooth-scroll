@@ -105,5 +105,8 @@ set-option global scroll_options speed=0 interval=10 max_duration=500
   - This implementation utilizes Kakoune's internal [remote API](https://github.com/mawww/kakoune/blob/master/src/remote.hh), so it may break with future Kakoune versions
   - A more performant implementation with pure `kak`/`sh` should be possible if [timer hooks](https://github.com/mawww/kakoune/issues/2337#issuecomment-416531650) become available
 
+## Acknowledgments
+Thanks @Screwtapello and @Guest0x0 for valuable feedback and fixes!
+
 ## License
 MIT
