@@ -103,7 +103,7 @@ define-command smooth-scroll-enable -docstring "enable smooth scrolling for wind
     # done scrolling, so restore cursor highlighting and original selection
     hook -group scroll window WinSetOption scroll_running= %{
         evaluate-commands -client %opt{scroll_client} %{
-            select %opt{scroll_selections}
+            try %{ select %opt{scroll_selections} }
         }
         unset-face window PrimaryCursor
         unset-face window PrimaryCursorEol
