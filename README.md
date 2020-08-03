@@ -1,7 +1,8 @@
 # kakoune-smooth-scroll
 Smooth scrolling for the [Kakoune](https://kakoune.org) text editor, with inertial movement
 
-<a href="https://asciinema.org/a/348495?autoplay=1&loop=1" target="_blank"><img src="https://asciinema.org/a/348495.svg" width="600"/></a>
+[![demo](https://caksoylar.github.io/kakoune-smooth-scroll/kakoune-smooth-scroll-v2-60fps.gif)](https://asciinema.org/a/m0DhKbv9AjAABOABKadgeYnH6?autoplay=1&loop=1)
+<br/>(click for asciicast)
 
 This plugin implements smooth scrolling similar to various plugins for Vim/Emacs etc. such as [vim-smooth-scroll](https://github.com/terryma/vim-smooth-scroll).
 It gives you better visual feedback while scrolling and arguably helps you preserve your "sense of place" when making large jumps such as when using `<c-f>/<c-b>` movements.
