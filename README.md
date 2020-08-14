@@ -98,7 +98,11 @@ set-option global scroll_options speed=0 interval=10 max_duration=500
 ```
 
 ## Caveats
-- Smooth scrolling is not performed for movements that do not modify the selection, such as any movement through the `view` mode. See [related Kakoune issue](https://github.com/mawww/kakoune/issues/3616)
+- Due to a [related Kakoune issue](https://github.com/mawww/kakoune/issues/3616), smooth scrolling for page-scrolling commands require some tricks to work (see [#2](https://github.com/caksoylar/kakoune-smooth-scroll/issues/2)).
+As a result, the smooth version of `<c-f>`, `<c-b>`, `<c-d>`, `<c-u>` behaves differently from their vanilla counterparts.
+Specifically, when the cursor will fall out of window after performing the scrolling, vanilla kakoune place the cursor as close to the original one as possible (i.e. at top/bottom of the window),
+while the smooth version will keep the display position of the cursor unchanged.
+If you are unhappy with this behavior, you can choose not map these keys in the config.
 - Keys that modify the buffer should not be mapped, such as `u` and `U` in `normal` mode, since the implementation discards any buffer modifications made by mapped keys
 - Movements that are caused by the `prompt` mode such as `/search_word<ret>` can not be mapped at the moment
 - Repeating selections with `<a-.>` is not possible if the selection was made through mapped keys

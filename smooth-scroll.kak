@@ -70,7 +70,23 @@ define-command smooth-scroll-enable -docstring "enable smooth scrolling for wind
                 # in case both sides of the mapping were given with lhs=rhs, split
                 lhs=${key%%=*}
                 rhs=${key#*=}
-                printf 'smooth-scroll-map-key %s %s %s\n' "$mode" "$lhs" "$rhs"
+                case "$mode#$rhs" in
+                    'normal#<c-f>' )
+                        printf 'map window %s %s ":smooth-scroll-by-page 1<ret>"\n' "$mode" "$lhs"
+                        ;;
+                    'normal#<c-b>' )
+                        printf 'map window %s %s ":smooth-scroll-by-page -1<ret>"\n' "$mode" "$lhs"
+                        ;;
+                    'normal#<c-d>' )
+                        printf 'map window %s %s ":smooth-scroll-by-page 2<ret>"\n' "$mode" "$lhs"
+                        ;;
+                    'normal#<c-u>' )
+                        printf 'map window %s %s ":smooth-scroll-by-page -2<ret>"\n' "$mode" "$lhs"
+                        ;;
+                    * )
+                        printf 'smooth-scroll-map-key %s %s %s\n' "$mode" "$lhs" "$rhs"
+                        ;;
+                esac
             done
         done
     }
@@ -230,5 +246,23 @@ define-command smooth-scroll-move -params 1 -hidden %{
             printf "eval -client %s '%s'\\n" "$kak_client" 'set-option window scroll_running ""' | kak -p "$kak_session" 
         ) >/dev/null 2>&1 </dev/null &
         printf 'set-option window scroll_running %s\n' "$!"
+    }
+}
+
+define-command -hidden -params 1 smooth-scroll-by-page -docstring %{
+    scroll smoothly by (1 / %arg{1}) pages, positive for down, negative for up.
+} %{
+    evaluate-commands %sh{
+        distance=$(expr $kak_window_height / $1)
+        if [ $kak_cursor_line -ge $(( ${kak_window_range%% *} + $distance )) ] \
+        && [ $kak_cursor_line -le $(( ${kak_window_range%% *} + $distance + $kak_window_height )) ];
+        then
+            # The cursor doesn't need to move, save the selection
+            printf 'set-option window scroll_selections %s\n' "$kak_selections_desc"
+        else
+            # The cursor has to move, don't save it
+            printf 'set-option window scroll_selections\n'
+        fi
+        printf "smooth-scroll-move %s\n" "$distance"
     }
 }
