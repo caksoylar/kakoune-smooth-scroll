@@ -70,23 +70,7 @@ define-command smooth-scroll-enable -docstring "enable smooth scrolling for wind
                 # in case both sides of the mapping were given with lhs=rhs, split
                 lhs=${key%%=*}
                 rhs=${key#*=}
-                case "$mode#$rhs" in
-                    'normal#<c-f>' )
-                        printf 'map window %s %s ": smooth-scroll-by-page 1 <lt>c-f<gt><ret>"\n' "$mode" "$lhs"
-                        ;;
-                    'normal#<c-b>' )
-                        printf 'map window %s %s ": smooth-scroll-by-page -1 <lt>c-b<gt><ret>"\n' "$mode" "$lhs"
-                        ;;
-                    'normal#<c-d>' )
-                        printf 'map window %s %s ": smooth-scroll-by-page 2 <lt>c-d<gt><ret>"\n' "$mode" "$lhs"
-                        ;;
-                    'normal#<c-u>' )
-                        printf 'map window %s %s ": smooth-scroll-by-page -2 <lt>c-u<gt><ret>"\n' "$mode" "$lhs"
-                        ;;
-                    * )
-                        printf 'smooth-scroll-map-key %s %s %s\n' "$mode" "$lhs" "$rhs"
-                        ;;
-                esac
+                printf 'smooth-scroll-map-key %s %s %s\n' "$mode" "$lhs" "$rhs"
             done
         done
     }
@@ -163,7 +147,24 @@ define-command smooth-scroll-map-key -params 3 -docstring %{
         fi
         lhs=$2
         rhs=$(echo "$3" | sed -e 's/^</<lt>/' -e 's/>$/<gt>/')
-        printf 'map window %s %s "%s: smooth-scroll-do-key %s %s<ret>"\n' "$mode" "$lhs" "$esc" "$rhs" "$prefix"
+
+        # handle page scroll keys specially
+        case "$mode#$3" in
+            "normal#<c-f>")
+                printf 'map window %s %s ": smooth-scroll-by-page  1 %s<ret>"\n' "$mode" "$lhs" "$rhs"
+                ;;
+            "normal#<c-b>")
+                printf 'map window %s %s ": smooth-scroll-by-page -1 %s<ret>"\n' "$mode" "$lhs" "$rhs"
+                ;;
+            "normal#<c-d>")
+                printf 'map window %s %s ": smooth-scroll-by-page  2 %s<ret>"\n' "$mode" "$lhs" "$rhs"
+                ;;
+            "normal#<c-u>")
+                printf 'map window %s %s ": smooth-scroll-by-page -2 %s<ret>"\n' "$mode" "$lhs" "$rhs"
+                ;;
+            *)
+                printf 'map window %s %s "%s: smooth-scroll-do-key %s %s<ret>"\n' "$mode" "$lhs" "$esc" "$rhs" "$prefix"
+        esac
     }
 }
 
@@ -262,11 +263,11 @@ define-command -hidden -params 2 smooth-scroll-by-page -docstring %{
         if [ "$kak_cursor_line" -ge $(( ${kak_window_range%% *} + distance )) ] \
         && [ "$kak_cursor_line" -le $(( ${kak_window_range%% *} + distance + kak_window_height )) ];
         then
-            # The cursor doesn't need to move, save the selection and move manually
+            # the cursor doesn't need to move, save the selection and move manually
             printf 'set-option window scroll_selections %s\n' "$kak_selections_desc"
-            printf "smooth-scroll-move %s\n" "$distance"
+            printf 'smooth-scroll-move %s\n' "$distance"
         else
-            # The cursor has to move, so emulate the key press
+            # the cursor has to move, so emulate the key press
             printf 'smooth-scroll-do-key "%s" ""\n' "$2"
         fi
     }
