@@ -99,6 +99,7 @@ set-option global scroll_options speed=0 interval=10 max_duration=500
 
 ## Caveats
 - Smooth scrolling is not performed for movements that do not modify the selection, such as any movement through the `view` mode. See [related Kakoune issue](https://github.com/mawww/kakoune/issues/3616)
+  - Keys that scroll by page (`<c-f>`,`<c-b>`,`<c-d>`,`<c-u>`) are handled specially to work around this limitation
 - Keys that modify the buffer should not be mapped, such as `u` and `U` in `normal` mode, since the implementation discards any buffer modifications made by mapped keys
 - Movements that are caused by the `prompt` mode such as `/search_word<ret>` can not be mapped at the moment
 - Repeating selections with `<a-.>` is not possible if the selection was made through mapped keys
