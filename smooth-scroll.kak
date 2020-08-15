@@ -253,7 +253,10 @@ define-command -hidden -params 1 smooth-scroll-by-page -docstring %{
     scroll smoothly by (1 / %arg{1}) pages, positive for down, negative for up.
 } %{
     evaluate-commands %sh{
-        distance=$(expr $kak_window_height / $1)
+        if [ "$kak_count" = 0 ]; then
+            kak_count=1
+        fi
+        distance=$(( kak_count * kak_window_height / $1 ))
         if [ $kak_cursor_line -ge $(( ${kak_window_range%% *} + $distance )) ] \
         && [ $kak_cursor_line -le $(( ${kak_window_range%% *} + $distance + $kak_window_height )) ];
         then
