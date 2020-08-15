@@ -72,16 +72,16 @@ define-command smooth-scroll-enable -docstring "enable smooth scrolling for wind
                 rhs=${key#*=}
                 case "$mode#$rhs" in
                     'normal#<c-f>' )
-                        printf 'map window %s %s ": smooth-scroll-by-page 1<ret>"\n' "$mode" "$lhs"
+                        printf 'map window %s %s ": smooth-scroll-by-page 1 <lt>c-f<gt><ret>"\n' "$mode" "$lhs"
                         ;;
                     'normal#<c-b>' )
-                        printf 'map window %s %s ": smooth-scroll-by-page -1<ret>"\n' "$mode" "$lhs"
+                        printf 'map window %s %s ": smooth-scroll-by-page -1 <lt>c-b<gt><ret>"\n' "$mode" "$lhs"
                         ;;
                     'normal#<c-d>' )
-                        printf 'map window %s %s ": smooth-scroll-by-page 2<ret>"\n' "$mode" "$lhs"
+                        printf 'map window %s %s ": smooth-scroll-by-page 2 <lt>c-d<gt><ret>"\n' "$mode" "$lhs"
                         ;;
                     'normal#<c-u>' )
-                        printf 'map window %s %s ": smooth-scroll-by-page -2<ret>"\n' "$mode" "$lhs"
+                        printf 'map window %s %s ": smooth-scroll-by-page -2 <lt>c-u<gt><ret>"\n' "$mode" "$lhs"
                         ;;
                     * )
                         printf 'smooth-scroll-map-key %s %s %s\n' "$mode" "$lhs" "$rhs"
@@ -249,8 +249,10 @@ define-command smooth-scroll-move -params 1 -hidden %{
     }
 }
 
-define-command -hidden -params 1 smooth-scroll-by-page -docstring %{
-    scroll smoothly by (1 / %arg{1}) pages, positive for down, negative for up.
+define-command -hidden -params 2 smooth-scroll-by-page -docstring %{
+    scroll smoothly by (1 / %arg{1}) pages, positive for down, negative for up. if
+    the cursor doesn't have to move, scroll manually. otherwise, emulate the key
+    press given by %arg{2}.
 } %{
     evaluate-commands %sh{
         if [ "$kak_count" = 0 ]; then
@@ -260,12 +262,12 @@ define-command -hidden -params 1 smooth-scroll-by-page -docstring %{
         if [ "$kak_cursor_line" -ge $(( ${kak_window_range%% *} + distance )) ] \
         && [ "$kak_cursor_line" -le $(( ${kak_window_range%% *} + distance + kak_window_height )) ];
         then
-            # The cursor doesn't need to move, save the selection
+            # The cursor doesn't need to move, save the selection and move manually
             printf 'set-option window scroll_selections %s\n' "$kak_selections_desc"
+            printf "smooth-scroll-move %s\n" "$distance"
         else
-            # The cursor has to move, don't save it
-            printf 'set-option window scroll_selections\n'
+            # The cursor has to move, so emulate the key press
+            printf 'smooth-scroll-do-key "%s" ""\n' "$2"
         fi
-        printf 'smooth-scroll-move %s\n' "$distance"
     }
 }
