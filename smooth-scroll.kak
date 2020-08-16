@@ -259,7 +259,7 @@ define-command -hidden -params 2 smooth-scroll-by-page -docstring %{
         if [ "$kak_count" = 0 ]; then
             kak_count=1
         fi
-        distance=$(( kak_count * kak_window_height / $1 ))
+        distance=$(( kak_count * (kak_window_height - 2) / $1 ))  # from src/normal.cc#L1398
         if [ "$kak_cursor_line" -ge $(( ${kak_window_range%% *} + distance )) ] \
         && [ "$kak_cursor_line" -le $(( ${kak_window_range%% *} + distance + kak_window_height )) ];
         then
