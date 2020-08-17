@@ -19,7 +19,7 @@ declare-option -docstring %{
     Default:
         <c-f> <c-b> <c-d> <c-u> <pageup> <pagedown> ( ) m M <a-semicolon>
         <percent> n <a-n> N <a-N>
-} str-list scroll_keys_normal <c-f> <c-b> <c-d> <c-u> <pageup> <pagedown> ( ) m M <a-semicolon> <percent> n <a-n> N <a-N>
+} str-list scroll_keys_normal <c-f> <c-b> <c-d> <c-u> <pageup> <pagedown> ( ) m M <a-semicolon> \% n <a-n> N <a-N>
 
 declare-option -docstring %{
     list of keys to apply smooth scrolling in goto mode. If source and
@@ -70,7 +70,7 @@ define-command smooth-scroll-enable -docstring "enable smooth scrolling for wind
                 # in case both sides of the mapping were given with lhs=rhs, split
                 lhs=${key%%=*}
                 rhs=${key#*=}
-                printf 'smooth-scroll-map-key %s %s %s\n' "$mode" "$lhs" "$rhs"
+                printf "smooth-scroll-map-key %s '%s' '%s'\\n" "$mode" "$lhs" "$rhs"
             done
         done
     }
@@ -120,7 +120,7 @@ define-command smooth-scroll-disable -docstring "disable smooth scrolling for wi
             eval "set -- $option"
             for key; do
                 lhs=${key%%=*}
-                printf 'unmap window %s %s\n' "$mode" "$lhs"
+                printf "unmap window %s '%s'\\n" "$mode" "$lhs"
             done
         done
     }
@@ -139,10 +139,10 @@ define-command smooth-scroll-map-key -params 3 -docstring %{
     evaluate-commands %sh{
         mode="$1"
         if [ "$mode" = "normal" ]; then
-            prefix="''"
+            prefix='""'
             esc=""
         else
-            prefix="%%opt{scroll_mode}"
+            prefix="%opt{scroll_mode}"
             esc="<esc>"
         fi
         lhs=$2
@@ -151,19 +151,19 @@ define-command smooth-scroll-map-key -params 3 -docstring %{
         # handle page scroll keys specially
         case "$mode#$3" in
             "normal#<c-f>")
-                printf 'map window %s %s ": smooth-scroll-by-page  1 %s<ret>"\n' "$mode" "$lhs" "$rhs"
+                printf "map window %s '%s' ': smooth-scroll-by-page  1 ''%s''<ret>'\\n" "$mode" "$lhs" "$rhs"
                 ;;
             "normal#<c-b>")
-                printf 'map window %s %s ": smooth-scroll-by-page -1 %s<ret>"\n' "$mode" "$lhs" "$rhs"
+                printf "map window %s '%s' ': smooth-scroll-by-page -1 ''%s''<ret>'\\n" "$mode" "$lhs" "$rhs"
                 ;;
             "normal#<c-d>")
-                printf 'map window %s %s ": smooth-scroll-by-page  2 %s<ret>"\n' "$mode" "$lhs" "$rhs"
+                printf "map window %s '%s' ': smooth-scroll-by-page  2 ''%s''<ret>'\\n" "$mode" "$lhs" "$rhs"
                 ;;
             "normal#<c-u>")
-                printf 'map window %s %s ": smooth-scroll-by-page -2 %s<ret>"\n' "$mode" "$lhs" "$rhs"
+                printf "map window %s '%s' ': smooth-scroll-by-page -2 ''%s''<ret>'\\n" "$mode" "$lhs" "$rhs"
                 ;;
             *)
-                printf 'map window %s %s "%s: smooth-scroll-do-key %s %s<ret>"\n' "$mode" "$lhs" "$esc" "$rhs" "$prefix"
+                printf "map window %s '%s' '%s: smooth-scroll-do-key ''%s'' %s<ret>'\\n" "$mode" "$lhs" "$esc" "$rhs" "$prefix"
         esac
     }
 }
