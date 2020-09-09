@@ -139,7 +139,7 @@ define-command smooth-scroll-map-key -params 3 -docstring %{
     evaluate-commands %sh{
         mode="$1"
         if [ "$mode" = "normal" ]; then
-            prefix='""'
+            prefix=""
             esc=""
         else
             prefix="%opt{scroll_mode}"
@@ -163,15 +163,15 @@ define-command smooth-scroll-map-key -params 3 -docstring %{
                 printf "map window %s '%s' ': smooth-scroll-by-page -2 ''%s''<ret>'\\n" "$mode" "$lhs" "$rhs"
                 ;;
             *)
-                printf "map window %s '%s' '%s: smooth-scroll-do-key ''%s'' %s<ret>'\\n" "$mode" "$lhs" "$esc" "$rhs" "$prefix"
+                printf "map window %s '%s' '%s: smooth-scroll-do-keys %s ''%s''<ret>'\\n" "$mode" "$lhs" "$esc" "$prefix" "$rhs"
         esac
     }
 }
 
-define-command smooth-scroll-do-key -params 2 -hidden %{
+define-command smooth-scroll-do-keys -params .. -hidden %{
     # execute key in draft context to figure out the final selection and window_range
     evaluate-commands -draft %{
-        execute-keys %val{count} %arg{2} %arg{1}
+        execute-keys %val{count} %arg{@}
         set-option window scroll_window %val{window_range}
         set-option window scroll_selections %val{selections_desc}
     }
@@ -268,7 +268,7 @@ define-command -hidden -params 2 smooth-scroll-by-page -docstring %{
             printf 'smooth-scroll-move %s\n' "$distance"
         else
             # the cursor has to move, so emulate the key press
-            printf 'smooth-scroll-do-key "%s" ""\n' "$2"
+            printf 'smooth-scroll-do-keys "%s"\n' "$2"
         fi
     }
 }
