@@ -27,7 +27,7 @@ declare-option -docstring %{
     Existing mappings for source keys will be overridden.
 
     Default:
-        g j k e .
+        g k j e .
 } str-list scroll_keys_goto g j k e .
 
 declare-option -docstring %{
@@ -37,16 +37,7 @@ declare-option -docstring %{
 
     Default:
         p i B { }
-} str-list scroll_keys_object p i B { }
-
-# declare-option -docstring %{
-#     list of keys to apply smooth scrolling in view mode. If source and
-#     destination mappings are different, specify them in the format <src>=<dst>.
-#     Existing mappings for source keys will be overridden.
-
-#     Default:
-#         v c m t
-# } str-list scroll_keys_view v c m t
+} str-list scroll_keys_object B { } p i
 
 # internal
 declare-option -hidden str scroll_py %sh{printf "%s" "${kak_source%.kak}.py"}  # python script path
@@ -146,24 +137,36 @@ define-command smooth-scroll-map-key -params 3 -docstring %{
             esc="<esc>"
         fi
         lhs=$2
-        rhs=$(echo "$3" | sed -e 's/^</<lt>/' -e 's/>$/<gt>/')
+        rhs=$(printf '%s' "$3" | sed -e 's/^</<lt>/' -e 's/>$/<gt>/')
 
-        # handle page scroll keys specially
-        case "$mode#$3" in
-            "normal#<c-f>")
-                printf "map window %s '%s' ': smooth-scroll-by-page  1 ''%s''<ret>'\\n" "$mode" "$lhs" "$rhs"
+        case $mode in
+            normal)  # handle page scroll keys specially
+                case $3 in
+                    "<c-f>") printf "map window %s '%s' ': smooth-scroll-by-page  1 ''%s''<ret>'\\n" "$mode" "$lhs" "$rhs" ;;
+                    "<c-b>") printf "map window %s '%s' ': smooth-scroll-by-page -1 ''%s''<ret>'\\n" "$mode" "$lhs" "$rhs" ;;
+                    "<c-d>") printf "map window %s '%s' ': smooth-scroll-by-page  2 ''%s''<ret>'\\n" "$mode" "$lhs" "$rhs" ;;
+                    "<c-u>") printf "map window %s '%s' ': smooth-scroll-by-page -2 ''%s''<ret>'\\n" "$mode" "$lhs" "$rhs" ;;
+                    *)       printf "map window %s '%s' '%s: smooth-scroll-do-keys %s ''%s''<ret>'\\n" "$mode" "$lhs" "$esc" "$prefix" "$rhs"
+                esac
                 ;;
-            "normal#<c-b>")
-                printf "map window %s '%s' ': smooth-scroll-by-page -1 ''%s''<ret>'\\n" "$mode" "$lhs" "$rhs"
+            goto)  # add docstrings to some items
+                case $3 in
+                    [gk]) docstring='-docstring "buffer top"' ;;
+                    j)    docstring='-docstring "buffer bottom"' ;;
+                    e)    docstring='-docstring "buffer end"' ;;
+                    .)    docstring='-docstring "last buffer change"' ;;
+                    *)    docstring=""
+                esac
+                printf "map window %s '%s' '%s: smooth-scroll-do-keys %s ''%s''<ret>' %s\\n" "$mode" "$lhs" "$esc" "$prefix" "$rhs" "$docstring"
                 ;;
-            "normal#<c-d>")
-                printf "map window %s '%s' ': smooth-scroll-by-page  2 ''%s''<ret>'\\n" "$mode" "$lhs" "$rhs"
-                ;;
-            "normal#<c-u>")
-                printf "map window %s '%s' ': smooth-scroll-by-page -2 ''%s''<ret>'\\n" "$mode" "$lhs" "$rhs"
-                ;;
-            *)
-                printf "map window %s '%s' '%s: smooth-scroll-do-keys %s ''%s''<ret>'\\n" "$mode" "$lhs" "$esc" "$prefix" "$rhs"
+            object)  # add docstrings to some items
+                case $3 in
+                    [B{}]) docstring='-docstring "brackets block"' ;;
+                    p)     docstring='-docstring "paragraph"' ;;
+                    i)     docstring='-docstring "indent"' ;;
+                    *)     docstring=""
+                esac
+                printf "map window %s '%s' '%s: smooth-scroll-do-keys %s ''%s''<ret>' %s\\n" "$mode" "$lhs" "$esc" "$prefix" "$rhs" "$docstring"
         esac
     }
 }

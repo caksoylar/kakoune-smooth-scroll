@@ -55,16 +55,16 @@ Keys that are mapped for each mode are customized via the `scroll_keys_normal`, 
 
 | **object** keys                           | description                              |
 | ------                                    | ------                                   |
+|`B`, `{`, `}`                              | braces block                             |
 |`p`                                        | paragraph                                |
 |`i`                                        | indent                                   |
-|`B`, `{`, `}`                              | braces block                             |
 
 Default behavior is equivalent to the following configuration:
 
 ```kak
 set-option global scroll_keys_normal <c-f> <c-b> <c-d> <c-u> <pageup> <pagedown> ( ) m M <a-semicolon> <percent> n <a-n> N <a-N>
-set-option global scroll_keys_goto g j k e .
-set-option global scroll_keys_object p i B { }
+set-option global scroll_keys_goto g k j e .
+set-option global scroll_keys_object B { } p i
 ```
 
 You can override which keys are mapped for each mode by setting the corresponding option.
@@ -77,10 +77,10 @@ set-option global scroll_keys_goto
 
 By default each listed key is mapped to its regular function.
 You might want to customize source and destination keys for each map, especially if you are already mapping other keys to these functions.
-For instance if you use `<c-j>` instead of `<c-f>` and `<c-k>` instead of `<c-b>`, you can specify the option using `src=dst` pairs:
+For instance if you use `<a-d>` instead of `<c-d>` and `<a-u>` instead of `<c-u>`, you can specify the option using `src=dst` pairs:
 
 ```kak
-set-option global scroll_keys_normal <c-j>=<c-f> <c-k>=<c-b> <c-d> <c-u>
+set-option global scroll_keys_normal <c-f> <c-b> <a-d>=<c-d> <a-u>=<c-u>
 ```
 
 Note that these options need to be set before smooth scrolling is enabled for a window.
