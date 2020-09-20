@@ -28,7 +28,7 @@ declare-option -docstring %{
 
     Default:
         g k j e .
-} str-list scroll_keys_goto g j k e .
+} str-list scroll_keys_goto g k j e .
 
 declare-option -docstring %{
     list of keys to apply smooth scrolling in object mode. If source and
@@ -36,7 +36,7 @@ declare-option -docstring %{
     Existing mappings for source keys will be overridden.
 
     Default:
-        p i B { }
+        B { } p i
 } str-list scroll_keys_object B { } p i
 
 # internal
@@ -129,49 +129,50 @@ define-command smooth-scroll-map-key -params 3 -docstring %{
 } %{
     evaluate-commands %sh{
         mode="$1"
-        if [ "$mode" = "normal" ]; then
-            prefix=""
-            esc=""
-        else
-            prefix="%opt{scroll_mode}"
-            esc="<esc>"
-        fi
         lhs=$2
-        rhs=$(printf '%s' "$3" | sed -e 's/^</<lt>/' -e 's/>$/<gt>/')
+        rhs=$3
+        q_rhs=$(printf '%s' "$rhs" | sed -e 's/</#lt#/g' -e 's/>/<gt>/g' -e 's/#lt#/<lt>/g')
 
         case $mode in
             normal)  # handle page scroll keys specially
-                case $3 in
-                    "<c-f>") printf "map window %s '%s' ': smooth-scroll-by-page  1 ''%s''<ret>'\\n" "$mode" "$lhs" "$rhs" ;;
-                    "<c-b>") printf "map window %s '%s' ': smooth-scroll-by-page -1 ''%s''<ret>'\\n" "$mode" "$lhs" "$rhs" ;;
-                    "<c-d>") printf "map window %s '%s' ': smooth-scroll-by-page  2 ''%s''<ret>'\\n" "$mode" "$lhs" "$rhs" ;;
-                    "<c-u>") printf "map window %s '%s' ': smooth-scroll-by-page -2 ''%s''<ret>'\\n" "$mode" "$lhs" "$rhs" ;;
-                    *)       printf "map window %s '%s' '%s: smooth-scroll-do-keys %s ''%s''<ret>'\\n" "$mode" "$lhs" "$esc" "$prefix" "$rhs"
+                case $rhs in
+                    "<c-f>") printf "map window %s '%s' ': smooth-scroll-by-page  1 ''%s''<ret>'\\n" "$mode" "$lhs" "$q_rhs" ;;
+                    "<c-b>") printf "map window %s '%s' ': smooth-scroll-by-page -1 ''%s''<ret>'\\n" "$mode" "$lhs" "$q_rhs" ;;
+                    "<c-d>") printf "map window %s '%s' ': smooth-scroll-by-page  2 ''%s''<ret>'\\n" "$mode" "$lhs" "$q_rhs" ;;
+                    "<c-u>") printf "map window %s '%s' ': smooth-scroll-by-page -2 ''%s''<ret>'\\n" "$mode" "$lhs" "$q_rhs" ;;
+                    *)       printf "map window %s '%s' ': smooth-scroll-execute-keys ''%s''<ret>'\\n" "$mode" "$lhs" "$q_rhs"
                 esac
                 ;;
             goto)  # add docstrings to some items
-                case $3 in
-                    [gk]) docstring='-docstring "buffer top"' ;;
-                    j)    docstring='-docstring "buffer bottom"' ;;
-                    e)    docstring='-docstring "buffer end"' ;;
-                    .)    docstring='-docstring "last buffer change"' ;;
-                    *)    docstring=""
+                case $rhs in
+                    [gk]) doc='-docstring "buffer top"' ;;
+                    j)    doc='-docstring "buffer bottom"' ;;
+                    e)    doc='-docstring "buffer end"' ;;
+                    .)    doc='-docstring "last buffer change"' ;;
+                    *)    doc=""
                 esac
-                printf "map window %s '%s' '%s: smooth-scroll-do-keys %s ''%s''<ret>' %s\\n" "$mode" "$lhs" "$esc" "$prefix" "$rhs" "$docstring"
+                printf "map window goto '%s' '<esc>: smooth-scroll-execute-keys %s ''%s''<ret>' %s\\n" "$lhs" "%opt{scroll_mode}" "$q_rhs" "$doc"
                 ;;
             object)  # add docstrings to some items
-                case $3 in
-                    [B{}]) docstring='-docstring "brackets block"' ;;
-                    p)     docstring='-docstring "paragraph"' ;;
-                    i)     docstring='-docstring "indent"' ;;
-                    *)     docstring=""
+                case $rhs in
+                    [B{}]) doc='-docstring "brackets block"' ;;
+                    p)     doc='-docstring "paragraph"' ;;
+                    i)     doc='-docstring "indent"' ;;
+                    *)     doc=""
                 esac
-                printf "map window %s '%s' '%s: smooth-scroll-do-keys %s ''%s''<ret>' %s\\n" "$mode" "$lhs" "$esc" "$prefix" "$rhs" "$docstring"
+                printf "map window object '%s' '<esc>: smooth-scroll-execute-keys %s ''%s''<ret>' %s\\n"  "$lhs" "%opt{scroll_mode}" "$q_rhs" "$doc"
+                ;;
+            *)
+                printf 'fail "mode %s is not supported for smooth-scroll-map-key"\n' "$mode"
         esac
     }
 }
 
-define-command smooth-scroll-do-keys -params .. -hidden %{
+define-command smooth-scroll-execute-keys -params .. -docstring %{
+    smooth-scroll-execute-keys <keys>: execute keys as given, scrolling smoothly
+    if window needs to be scrolled. does not modify the buffer even if the keys
+    would normally do so
+} %{
     # execute key in draft context to figure out the final selection and window_range
     evaluate-commands -draft %{
         execute-keys %val{count} %arg{@}
@@ -196,7 +197,11 @@ define-command smooth-scroll-do-keys -params .. -hidden %{
     }
 }
 
-define-command smooth-scroll-move -params 1 -hidden %{
+define-command smooth-scroll-move -params 1 -hidden -docstring %{
+    smooth-scroll-move <amount>: smoothly scroll abs(amount) rows down if positive,
+    up if negative. when completed, selections will be restored to the value in
+    %opt{scroll_selections}
+} %{
     evaluate-commands %sh{
         amount=$1
         # try to run the python version
@@ -253,10 +258,10 @@ define-command smooth-scroll-move -params 1 -hidden %{
     }
 }
 
-define-command -hidden -params 2 smooth-scroll-by-page -docstring %{
-    scroll smoothly by (1 / %arg{1}) pages, positive for down, negative for up. if
-    the cursor doesn't have to move, scroll manually. otherwise, emulate the key
-    press given by %arg{2}.
+define-command smooth-scroll-by-page -params 2 -hidden -docstring %{
+    smooth-scroll-by-page <unit> <key>: scroll smoothly by (1 / <unit>) pages,
+    positive for down, negative for up. if the cursor doesn't have to move, scroll
+    manually. otherwise, emulate the key press given by <key>
 } %{
     evaluate-commands %sh{
         if [ "$kak_count" = 0 ]; then
@@ -271,7 +276,7 @@ define-command -hidden -params 2 smooth-scroll-by-page -docstring %{
             printf 'smooth-scroll-move %s\n' "$distance"
         else
             # the cursor has to move, so emulate the key press
-            printf 'smooth-scroll-do-keys "%s"\n' "$2"
+            printf 'smooth-scroll-execute-keys "%s"\n' "$2"
         fi
     }
 }
