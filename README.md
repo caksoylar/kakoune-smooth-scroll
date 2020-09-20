@@ -75,16 +75,6 @@ set-option global scroll_keys_normal <c-f> <c-b> <c-d> <c-u>
 set-option global scroll_keys_goto
 ```
 
-By default each listed key is mapped to its regular function.
-You might want to customize source and destination keys for each map, especially if you are already mapping other keys to these functions.
-For instance if you use `<a-d>` instead of `<c-d>` and `<a-u>` instead of `<c-u>`, you can specify the option using `src=dst` pairs:
-
-```kak
-set-option global scroll_keys_normal <c-f> <c-b> <a-d>=<c-d> <a-u>=<c-u>
-```
-
-Note that these options need to be set before smooth scrolling is enabled for a window.
-
 ### Scrolling parameters
 There are a few parameters related to the scrolling behavior that are adjustable through the `scroll_options` option which is a list of `<key>=<value>` pairs. Following keys are accepted and all of them are optional:
 - `speed`: number of lines to scroll per tick, `0` for inertial scrolling (default: `0`)
@@ -96,6 +86,33 @@ The default configuration is equivalent to:
 ```kak
 set-option global scroll_options speed=0 interval=10 max_duration=500
 ```
+
+### Advanced usage
+
+When defining `scroll_keys_*` options, each listed key is mapped to its regular function by default.
+You might want to customize source and destination keys for each map, especially if you are already mapping other keys to these functions.
+For instance if you use `<a-d>` instead of `<c-d>` and `<a-u>` instead of `<c-u>`, you can specify the option using `src=dst` pairs:
+
+```kak
+set-option global scroll_keys_normal <c-f> <c-b> <a-d>=<c-d> <a-u>=<c-u>
+```
+
+Note that these options need to be set before smooth scrolling is enabled for a window.
+
+For more fine-tuned control you can map keys individually with `smooth-scroll-map-key`, which has an interface similar to Kakoune's `map` command:
+
+```kak
+smooth-scroll-map-key normal <a-percent> *<percent>s<ret>
+```
+
+The mappings are applied in the window scope.
+An analogue to `execute-keys` is also available if you want to utilize smooth scrolling programmatically:
+
+```kak
+smooth-scroll-execute-keys /TODO|FIXME<ret>
+```
+
+Note: Smooth scrolling still has to be enabled in the window scope using `smooth-scroll-enable` for above commands to work properly.
 
 ## Caveats
 - Smooth scrolling is not performed for movements that do not modify the selection, such as any movement through the `view` mode. See [related Kakoune issue](https://github.com/mawww/kakoune/issues/3616)
