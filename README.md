@@ -36,33 +36,34 @@ hook global WinCreate .* %{ hook -once window WinDisplay .* smooth-scroll-enable
 ### Customizing mapped keys
 Keys that are mapped for each mode are customized via the `scroll_keys_normal`, `scroll_keys_goto` and `scroll_keys_object` options. If for a mode the corresponding option is not set, keys that are mapped by default are the following:
 
-| **normal** keys                           | description                              |
-| ------                                    | ------                                   |
-|`<c-f>`, `<pagedown>`, `<c-b>`, `<pageup>` | scroll one page down/up                  |
-|`<c-d>`, `<c-u>`                           | scroll half a page down/up               |
-|`)`, `(`                                   | rotate main selection forward/backward   |
-|`m`, `M`                                   | select/extend to next matching character |
-|`<a-semicolon>` (`<a-;>`)                  | flip direction of selection              |
-|`<percent>` (`%`)                          | select whole buffer                      |
-|`n`, `<a-n>`, `N`, `<a-N>`                 | select/extend to next/previous match     |
+| **normal** keys                           | description                                 |
+| ------                                    | ------                                      |
+|`<c-f>`, `<pagedown>`, `<c-b>`, `<pageup>` | scroll one page down/up                     |
+|`<c-d>`, `<c-u>`                           | scroll half a page down/up                  |
+|`)`, `(`                                   | rotate main selection forward/backward      |
+|`m`, `M`                                   | select/extend to next matching character    |
+|`<a-semicolon>` (`<a-;>`)                  | flip direction of selection                 |
+|`<percent>` (`%`)                          | select whole buffer                         |
+|`n`, `<a-n>`, `N`, `<a-N>`                 | select/extend to next/previous match        |
+|`u`, `U`, `<a-u>`, `<a-U>`                 | undo/redo, move backward/forward in history |
 
-| **goto** keys                             | description                              |
-| ------                                    | ------                                   |
-|`g`, `k`                                   | buffer top                               |
-|`j`                                        | buffer bottom                            |
-|`e`                                        | buffer end                               |
-|`.`                                        | last buffer change                       |
+| **goto** keys                             | description                                 |
+| ------                                    | ------                                      |
+|`g`, `k`                                   | buffer top                                  |
+|`j`                                        | buffer bottom                               |
+|`e`                                        | buffer end                                  |
+|`.`                                        | last buffer change                          |
 
-| **object** keys                           | description                              |
-| ------                                    | ------                                   |
-|`B`, `{`, `}`                              | braces block                             |
-|`p`                                        | paragraph                                |
-|`i`                                        | indent                                   |
+| **object** keys                           | description                                 |
+| ------                                    | ------                                      |
+|`B`, `{`, `}`                              | braces block                                |
+|`p`                                        | paragraph                                   |
+|`i`                                        | indent                                      |
 
 Default behavior is equivalent to the following configuration:
 
 ```kak
-set-option global scroll_keys_normal <c-f> <c-b> <c-d> <c-u> <pageup> <pagedown> ( ) m M <a-semicolon> <percent> n <a-n> N <a-N>
+set-option global scroll_keys_normal <c-f> <c-b> <c-d> <c-u> <pageup> <pagedown> ( ) m M <a-semicolon> <percent> n <a-n> N <a-N> u U <a-u> <a-U>
 set-option global scroll_keys_goto g k j e .
 set-option global scroll_keys_object B { } p i
 ```
@@ -117,7 +118,6 @@ Note: Smooth scrolling still has to be enabled in the window scope using `smooth
 ## Caveats
 - Smooth scrolling is not performed for movements that do not modify the selection, such as any movement through the `view` mode. See [related Kakoune issue](https://github.com/mawww/kakoune/issues/3616)
   - Keys that scroll by page (`<c-f>`,`<c-b>`,`<c-d>`,`<c-u>`) are handled specially to work around this limitation
-- Keys that modify the buffer should not be mapped, such as `u` and `U` in `normal` mode, since the implementation discards any buffer modifications made by mapped keys
 - Movements that are caused by the `prompt` mode such as `/search_word<ret>` can not be mapped at the moment
 - Repeating selections with `<a-.>` is not possible if the selection was made through mapped keys
 - For optimal performance it uses a Python implementation which requires Python 3.6+ in path, falling back to `sh` if not available
