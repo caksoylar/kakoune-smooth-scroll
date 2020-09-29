@@ -6,10 +6,10 @@ Smooth scrolling for the [Kakoune](https://kakoune.org) text editor, with inerti
 
 This plugin implements smooth scrolling similar to various plugins for Vim/Emacs etc. such as [vim-smooth-scroll](https://github.com/terryma/vim-smooth-scroll).
 It gives you better visual feedback while scrolling and arguably helps you preserve your "sense of place" when making large jumps such as when using `<c-f>/<c-b>` movements.
-The latest version of the plugin adds support for many keys in `normal`, `goto` and `object` modes; see the "Configuration" section below.
+The latest version of the plugin adds the smooth scrolling effect to most operations in `normal`, `goto` and `object` modes -- see the "Configuration" section below.
 
-For that extra fun/coolness factor it also has support for inertial scrolling, also called the "easing out" or "soft stop" effect as seen above.
-This is similar to myriad plugins such as [comfortable-motion.vim](https://github.com/yuttie/comfortable-motion.vim), [vim-smoothie](https://github.com/psliwka/vim-smoothie/) and [sexy-scroller.vim](https://github.com/joeytwiddle/sexy_scroller.vim).
+It also has support for inertial scrolling, also called the "easing out" or "soft stop" effect as seen above.
+This effect is similar to Vim plugins such as [comfortable-motion.vim](https://github.com/yuttie/comfortable-motion.vim), [vim-smoothie](https://github.com/psliwka/vim-smoothie/) and [sexy-scroller.vim](https://github.com/joeytwiddle/sexy_scroller.vim).
 
 ## Installation
 Download `smooth-scroll.kak` and `smooth-scroll.py` to your `autoload` folder, e.g. into `~/.config/kak/autoload`.
@@ -79,7 +79,7 @@ set-option global scroll_keys_goto
 ### Scrolling parameters
 There are a few parameters related to the scrolling behavior that are adjustable through the `scroll_options` option which is a list of `<key>=<value>` pairs. Following keys are accepted and all of them are optional:
 - `speed`: number of lines to scroll per tick, `0` for inertial scrolling (default: `0`)
-- `interval`: average milliseconds between each scroll (default: `10`)
+- `interval`: average milliseconds between each tick (default: `10`)
 - `max_duration`: maximum duration of a scroll in milliseconds (default: `500`)
 
 The default configuration is equivalent to:
