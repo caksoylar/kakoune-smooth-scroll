@@ -30,8 +30,10 @@ Smooth scrolling is enabled and disabled on a per-window basis using `smooth-scr
 If you would like to automatically enable it for every window, you can use window-based hooks:
 
 ```kak
-hook global WinCreate .* %{ hook -once window WinDisplay .* smooth-scroll-enable }
+hook global WinCreate [^*].* %{ hook -once window WinDisplay .* smooth-scroll-enable }
 ```
+
+Above excludes special buffers that start with `*` like `*debug*`, `*scratch*` or `*plug*`.
 
 ### Customizing mapped keys
 Keys that are mapped for each mode are customized via the `scroll_keys_normal`, `scroll_keys_goto` and `scroll_keys_object` options. If for a mode the corresponding option is not set, keys that are mapped by default are the following:
