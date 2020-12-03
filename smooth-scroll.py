@@ -81,6 +81,16 @@ def scroll_once(sender: KakSender, step: int, interval: float) -> None:
         time.sleep(interval - elapsed)
 
 
+def linear_scroll(sender: KakSender, target: int, speed: int, interval: float) -> None:
+    """
+    Do linear scrolling with fixed velocity.
+    """
+    n_lines, step = abs(target), speed if target > 0 else -speed
+    times = n_lines // max(speed, 1)
+    for i in range(times):
+        scroll_once(sender, step, interval * (i < times - 1))
+
+
 def inertial_scroll(sender: KakSender, target: int, interval: float) -> None:
     """
     Do inertial scrolling with initial velocity decreasing linearly at each
@@ -122,17 +132,13 @@ def scroll() -> None:
 
     sender = KakSender()
 
-    n_lines = abs(amount)
-    interval = min(interval, max_duration / (n_lines - 1))
-    sign = 1 if amount > 0 else -1
+    interval = min(interval, max_duration / (abs(amount) - 1))
 
     # smoothly scroll to target
     if speed > 0 or interval < 1e-3:  # fixed speed scroll
-        times = n_lines // max(speed, 1)
-        for i in range(times):
-            scroll_once(sender, sign * speed, interval * (i < times - 1))
+        linear_scroll(sender, amount, speed, interval)
     else:  # inertial scroll
-        inertial_scroll(sender, sign * n_lines, interval)
+        inertial_scroll(sender, amount, interval)
 
     # report we are done
     sender.send_cmd('set-option window scroll_running ""', client=True)
