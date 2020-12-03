@@ -81,17 +81,18 @@ def scroll_once(sender: KakSender, step: int, interval: float) -> None:
         time.sleep(interval - elapsed)
 
 
-def linear_scroll(sender: KakSender, target: int, speed: int, interval: float) -> None:
+def linear_scroll(sender: KakSender, target: int, speed: int, duration: float) -> None:
     """
     Do linear scrolling with fixed velocity.
     """
     n_lines, step = abs(target), speed if target > 0 else -speed
     times = n_lines // max(speed, 1)
+    interval = duration / (times - 1)
     for i in range(times):
         scroll_once(sender, step, interval * (i < times - 1))
 
 
-def inertial_scroll(sender: KakSender, target: int, interval: float) -> None:
+def inertial_scroll(sender: KakSender, target: int, duration: float) -> None:
     """
     Do inertial scrolling with initial velocity decreasing linearly at each
     step towards zero. Per-step scrolling duration d_i is the inverse of the
@@ -99,16 +100,12 @@ def inertial_scroll(sender: KakSender, target: int, interval: float) -> None:
     total duration (omitting the final step) matches the linear scrolling
     duration. For S = abs(target) this is obtained by solving the formula
 
-        (S-1) * interval = sum_{i=1}^{S-1} d_i
+        duration = sum_{i=1}^{S-1} d_i
 
     where d_i = 1/v_i and v_i = v_1*(S-i+1)/S.
     """
     n_lines, step = abs(target), 1 if target > 0 else -1
-    velocity = (
-        n_lines
-        * sum(1.0 / x for x in range(2, n_lines + 1))
-        / ((n_lines - 1) * interval)
-    )
+    velocity = n_lines * sum(1.0 / x for x in range(2, n_lines + 1)) / duration  # type: ignore
     d_velocity = velocity / n_lines
     for i in range(n_lines):
         scroll_once(sender, step, 1 / velocity * (i < n_lines - 1))
@@ -132,13 +129,13 @@ def scroll() -> None:
 
     sender = KakSender()
 
-    interval = min(interval, max_duration / (abs(amount) - 1))
+    duration = min((abs(amount) - 1) * interval, max_duration)
 
     # smoothly scroll to target
     if speed > 0 or interval < 1e-3:  # fixed speed scroll
-        linear_scroll(sender, amount, speed, interval)
+        linear_scroll(sender, amount, speed, duration)
     else:  # inertial scroll
-        inertial_scroll(sender, amount, interval)
+        inertial_scroll(sender, amount, duration)
 
     # report we are done
     sender.send_cmd('set-option window scroll_running ""', client=True)
