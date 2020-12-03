@@ -88,7 +88,12 @@ def linear_scroll(sender: KakSender, target: int, speed: int, duration: float) -
     n_lines, step = abs(target), speed if target > 0 else -speed
     times = n_lines // max(speed, 1)
     interval = duration / (times - 1)
+
+    t_init = time.time()
     for i in range(times):
+        if time.time() - t_init > duration:
+            scroll_once(sender, step * (times - i), 0)
+            break
         scroll_once(sender, step, interval * (i < times - 1))
 
 
@@ -107,7 +112,12 @@ def inertial_scroll(sender: KakSender, target: int, duration: float) -> None:
     n_lines, step = abs(target), 1 if target > 0 else -1
     velocity = n_lines * sum(1.0 / x for x in range(2, n_lines + 1)) / duration  # type: ignore
     d_velocity = velocity / n_lines
+
+    t_init = time.time()
     for i in range(n_lines):
+        if time.time() - t_init > duration:
+            scroll_once(sender, step * (n_lines - i), 0)
+            break
         scroll_once(sender, step, 1 / velocity * (i < n_lines - 1))
         velocity -= d_velocity
 
