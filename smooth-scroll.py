@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 This module defines a KakSender class to communicate with Kakoune sessions
-over Unix sockets. It implements smooth scrolling when called as a script.
+over Unix sockets. It implements smooth scrolling when executed as a script.
 """
 
 import sys
@@ -42,8 +42,8 @@ class KakSender:
         b_cmd = cmd.encode('utf-8')
         sock = socket.socket(socket.AF_UNIX)
         sock.connect(self.socket_path)
-        b_content = self._get_length_bytes(len(b_cmd)) + b_cmd
-        b_header = b'\x02' + self._get_length_bytes(len(b_content) + 5)
+        b_content = self._encode_length(len(b_cmd)) + b_cmd
+        b_header = b'\x02' + self._encode_length(len(b_content) + 5)
         b_message = b_header + b_content
         return sock.send(b_message) == len(b_message)
 
@@ -53,7 +53,7 @@ class KakSender:
         return self.send_cmd(cmd)
 
     @staticmethod
-    def _get_length_bytes(str_length: int) -> bytes:
+    def _encode_length(str_length: int) -> bytes:
         return str_length.to_bytes(4, byteorder=sys.byteorder)
 
 
@@ -67,8 +67,10 @@ def parse_options(option_name: str) -> dict:
 
 
 def scroll_once(sender: KakSender, step: int, interval: float) -> None:
-    """Send a scroll event to Kakoune client and make sure it takes at least
-    `interval` seconds."""
+    """
+    Send a scroll event to Kakoune client and make sure it takes at least
+    `interval` seconds.
+    """
     t_start = time.time()
     speed = abs(step)
     keys = f"{speed}j{speed}vj" if step > 0 else f"{speed}k{speed}vk"
@@ -79,7 +81,23 @@ def scroll_once(sender: KakSender, step: int, interval: float) -> None:
         time.sleep(interval - elapsed)
 
 
-def inertial_scroll(sender: KakSender, target: int, interval: float) -> None:
+def linear_scroll(sender: KakSender, target: int, speed: int, duration: float) -> None:
+    """
+    Do linear scrolling with fixed velocity.
+    """
+    n_lines, step = abs(target), speed if target > 0 else -speed
+    times = n_lines // max(speed, 1)
+    interval = duration / (times - 1)
+
+    t_init = time.time()
+    for i in range(times):
+        if time.time() - t_init > duration:
+            scroll_once(sender, step * (times - i), 0)
+            break
+        scroll_once(sender, step, interval * (i < times - 1))
+
+
+def inertial_scroll(sender: KakSender, target: int, duration: float) -> None:
     """
     Do inertial scrolling with initial velocity decreasing linearly at each
     step towards zero. Per-step scrolling duration d_i is the inverse of the
@@ -87,23 +105,24 @@ def inertial_scroll(sender: KakSender, target: int, interval: float) -> None:
     total duration (omitting the final step) matches the linear scrolling
     duration. For S = abs(target) this is obtained by solving the formula
 
-        (S-1) * interval = sum_{i=1}^{S-1} d_i
+        duration = sum_{i=1}^{S-1} d_i
 
     where d_i = 1/v_i and v_i = v_1*(S-i+1)/S.
     """
     n_lines, step = abs(target), 1 if target > 0 else -1
-    velocity = (
-        n_lines
-        * sum(1.0 / x for x in range(2, n_lines + 1))
-        / ((n_lines - 1) * interval)
-    )
+    velocity = n_lines * sum(1.0 / x for x in range(2, n_lines + 1)) / duration  # type: ignore
     d_velocity = velocity / n_lines
+
+    t_init = time.time()
     for i in range(n_lines):
+        if time.time() - t_init > duration:
+            scroll_once(sender, step * (n_lines - i), 0)
+            break
         scroll_once(sender, step, 1 / velocity * (i < n_lines - 1))
         velocity -= d_velocity
 
 
-def main() -> None:
+def scroll() -> None:
     """
     Do smooth scrolling using KakSender methods. Expected positional arguments:
         amount:   number of lines to scroll; positive for down, negative for up
@@ -114,25 +133,23 @@ def main() -> None:
         float(options.get("interval", 10)) / 1000
     )  # interval between ticks, convert ms to s
     speed = int(options.get("speed", 0))  # number of lines per tick
-    max_duration = int(options.get("max_duration", 1000)) / 1000  # max amount of time to scroll
+    max_duration = (
+        int(options.get("max_duration", 1000)) / 1000
+    )  # max amount of time to scroll
 
     sender = KakSender()
 
-    n_lines = abs(amount)
-    interval = min(interval, max_duration / (n_lines - 1))
-    sign = 1 if amount > 0 else -1
+    duration = min((abs(amount) - 1) * interval, max_duration)
 
     # smoothly scroll to target
     if speed > 0 or interval < 1e-3:  # fixed speed scroll
-        times = n_lines // max(speed, 1)
-        for i in range(times):
-            scroll_once(sender, sign * speed, interval * (i < times - 1))
+        linear_scroll(sender, amount, speed, duration)
     else:  # inertial scroll
-        inertial_scroll(sender, sign * n_lines, interval)
+        inertial_scroll(sender, amount, duration)
 
-    # note we are done
+    # report we are done
     sender.send_cmd('set-option window scroll_running ""', client=True)
 
 
 if __name__ == '__main__':
-    main()
+    scroll()
