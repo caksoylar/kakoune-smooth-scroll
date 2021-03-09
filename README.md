@@ -122,6 +122,7 @@ Note: Smooth scrolling still has to be enabled in the window scope using `smooth
   - Keys that scroll by page (`<c-f>`,`<c-b>`,`<c-d>`,`<c-u>`) are handled specially to work around this limitation
 - Movements that are caused by the `prompt` mode such as `/search_word<ret>` can not be mapped at the moment
 - Repeating selections with `<a-.>` is not possible if the selection was made through mapped keys
+- Does not work for large vertical `scrolloff` values which are frequently used for keeping the cursor centered in the window, see [issue](https://github.com/caksoylar/kakoune-smooth-scroll/issues/9)
 - For optimal performance it uses a Python implementation which requires Python 3.6+ in path, falling back to `sh` if not available
   - This implementation utilizes Kakoune's internal [remote API](https://github.com/mawww/kakoune/blob/master/src/remote.hh), so it may break with future Kakoune versions
   - A more performant implementation with pure `kak`/`sh` should be possible if [timer hooks](https://github.com/mawww/kakoune/issues/2337#issuecomment-416531650) become available
