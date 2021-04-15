@@ -128,7 +128,7 @@ define-command smooth-scroll-map-key -params 3 -docstring %{
     mode <mode> and enable smooth scrolling for that operation
 } %{
     evaluate-commands %sh{
-        mode="$1"
+        mode=$1
         lhs=$2
         rhs=$3
         q_rhs=$(printf '%s' "$rhs" | sed -e 's/</#lt#/g' -e 's/>/<gt>/g' -e 's/#lt#/<lt>/g')
@@ -143,15 +143,15 @@ define-command smooth-scroll-map-key -params 3 -docstring %{
                     *)       printf "map window %s '%s' ': smooth-scroll-execute-keys ''%s''<ret>'\\n" "$mode" "$lhs" "$q_rhs"
                 esac
                 ;;
-            goto)  # add docstrings to some items
+            goto)  # save selections to jump list to emulate native behavior and add docstrings to some items
                 case $rhs in
-                    [gk]) doc='-docstring "buffer top"' ;;
-                    j)    doc='-docstring "buffer bottom"' ;;
-                    e)    doc='-docstring "buffer end"' ;;
-                    .)    doc='-docstring "last buffer change"' ;;
-                    *)    doc=""
+                    [gk]) save='<c-s>'; doc='-docstring "buffer top"' ;;
+                    j)    save='<c-s>'; doc='-docstring "buffer bottom"' ;;
+                    e)    save='<c-s>'; doc='-docstring "buffer end"' ;;
+                    .)    save='<c-s>'; doc='-docstring "last buffer change"' ;;
+                    *)    save='';      doc="";
                 esac
-                printf "map window goto '%s' '<esc>: smooth-scroll-execute-keys %s ''%s''<ret>' %s\\n" "$lhs" "%opt{scroll_mode}" "$q_rhs" "$doc"
+                printf "map window goto '%s' '<esc>%s: smooth-scroll-execute-keys %s ''%s''<ret>' %s\\n" "$lhs" "$save" "%opt{scroll_mode}" "$q_rhs" "$doc"
                 ;;
             object)  # add docstrings to some items
                 case $rhs in
