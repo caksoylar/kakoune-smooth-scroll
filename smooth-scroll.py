@@ -77,6 +77,7 @@ def scroll_once(sender: KakSender, step: int, interval: float) -> None:
     speed = abs(step)
     keys = f"{speed}j{speed}vj" if step > 0 else f"{speed}k{speed}vk"
     sender.send_keys(keys)
+    sender.send_cmd("trigger-user-hook view-scrolled", client=True)
     t_end = time.time()
     elapsed = t_end - t_start
     if elapsed < interval:
