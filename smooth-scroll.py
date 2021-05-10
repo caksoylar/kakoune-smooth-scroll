@@ -9,6 +9,8 @@ import os
 import time
 import socket
 
+SEND_THRESHOLD = 5e-3  # min time in s between sending two scroll events
+
 
 class KakSender:
     """Helper to communicate with Kakoune's remote API using Unix sockets."""
@@ -113,14 +115,27 @@ def inertial_scroll(sender: KakSender, target: int, duration: float) -> None:
     velocity = n_lines * sum(1.0 / x for x in range(2, n_lines + 1)) / duration  # type: ignore
     d_velocity = velocity / n_lines
 
+    # keep track of total steps and interval for potential batching
+    # before sending a scroll event
+    q_step, q_duration = 0, 0.
+
     t_init = time.time()
     for i in range(n_lines):
         # shortcut to the end if we are past total duration
         if time.time() - t_init > duration:
             scroll_once(sender, step * (n_lines - i), 0)
             break
-        scroll_once(sender, step, 1 / velocity * (i < n_lines - 1))
+
+        interval = 1 / velocity * (i < n_lines - 1)
         velocity -= d_velocity
+
+        # update queue check if we are past the event send interval
+        q_duration += interval
+        q_step += step
+        # print(interval, q_duration, q_step)
+        if i == n_lines - 1 or q_duration >= SEND_THRESHOLD:
+            scroll_once(sender, q_step, q_duration)
+            q_step, q_duration = 0, 0.
 
 
 def scroll() -> None:
