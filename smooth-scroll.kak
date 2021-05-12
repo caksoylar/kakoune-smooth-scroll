@@ -204,17 +204,21 @@ define-command smooth-scroll-move -params 1 -hidden -docstring %{
 } %{
     evaluate-commands %sh{
         amount=$1
-        # try to run the python version
-        if type python3 >/dev/null 2>&1 && [ -f "$kak_opt_scroll_py" ]; then
-            python3 "$kak_opt_scroll_py" "$amount" >/dev/null 2>&1 </dev/null &
-            printf 'set-option window scroll_running %s\n' "$!"
-            exit 0
-        fi
+        abs_amount=${amount#-}
 
-        # fall back to pure sh
-        if [ "$kak_opt_scroll_fallback" = "false" ]; then
-            printf 'set-option global scroll_fallback true\n'
-            printf 'echo -debug kakoune-smooth-scroll: WARNING -- cannot execute python version, falling back to pure sh\n'
+        if [ "$abs_amount" -gt 1 ]; then
+            # try to run the python version
+            if type python3 >/dev/null 2>&1 && [ -f "$kak_opt_scroll_py" ]; then
+                python3 "$kak_opt_scroll_py" "$amount" >/dev/null 2>&1 </dev/null &
+                printf 'set-option window scroll_running %s\n' "$!"
+                exit 0
+            fi
+
+            # fall back to pure sh
+            if [ "$kak_opt_scroll_fallback" = "false" ]; then
+                printf 'set-option global scroll_fallback true\n'
+                printf 'echo -debug kakoune-smooth-scroll: WARNING -- cannot execute python version, falling back to pure sh\n'
+            fi
         fi
 
         eval "$kak_opt_scroll_options"
@@ -225,7 +229,6 @@ define-command smooth-scroll-move -params 1 -hidden -docstring %{
             speed=1
         fi
 
-        abs_amount=${amount#-}
         if [ "$abs_amount" = "$amount" ]; then
             keys="${speed}j${speed}vj"
         else
