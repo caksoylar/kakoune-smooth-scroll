@@ -192,7 +192,7 @@ define-command smooth-scroll-execute-keys -params .. -docstring %{
                 exit 0
             fi
         fi
-        # we haven't moved the viewport enough so just apply selection 
+        # we haven't moved the viewport enough so just apply selection
         printf 'select %s\n' "$kak_opt_scroll_selections"
     }
 }
@@ -255,7 +255,7 @@ define-command smooth-scroll-move -params 1 -hidden -docstring %{
                 fi
                 i=$(( i + 1 ))
             done
-            printf "eval -client %s '%s'\\n" "$kak_client" 'set-option window scroll_running ""' | kak -p "$kak_session" 
+            printf "evaluate-commands -client %s '%s'\\n" "$kak_client" 'set-option window scroll_running ""' | kak -p "$kak_session"
         ) >/dev/null 2>&1 </dev/null &
         printf 'set-option window scroll_running %s\n' "$!"
     }

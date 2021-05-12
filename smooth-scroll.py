@@ -30,7 +30,7 @@ class KakSender:
         Send a command string to the Kakoune session. Sent data is a
         concatenation of:
            - Header
-             - Magic byte indicating command (\x02)
+             - Magic byte indicating type is "command" (\x02)
              - Length of whole message in uint32
            - Content
              - Length of command string in uint32
@@ -83,7 +83,7 @@ def scroll_once(sender: KakSender, step: int, interval: float) -> None:
 
 def linear_scroll(sender: KakSender, target: int, speed: int, duration: float) -> None:
     """
-    Do linear scrolling with fixed velocity.
+    Do scrolling with a fixed velocity.
     """
     n_lines, step = abs(target), speed if target > 0 else -speed
     times = n_lines // max(speed, 1)
@@ -115,6 +115,7 @@ def inertial_scroll(sender: KakSender, target: int, duration: float) -> None:
 
     t_init = time.time()
     for i in range(n_lines):
+        # shortcut to the end if we are past total duration
         if time.time() - t_init > duration:
             scroll_once(sender, step * (n_lines - i), 0)
             break
@@ -126,16 +127,20 @@ def scroll() -> None:
     """
     Do smooth scrolling using KakSender methods. Expected positional arguments:
         amount:   number of lines to scroll; positive for down, negative for up
+                  assuming abs(amount) > 1
     """
     amount = int(sys.argv[1])
+
     options = parse_options("scroll_options")
-    interval = (
-        float(options.get("interval", 10)) / 1000
-    )  # interval between ticks, convert ms to s
-    speed = int(options.get("speed", 0))  # number of lines per tick
-    max_duration = (
-        int(options.get("max_duration", 1000)) / 1000
-    )  # max amount of time to scroll
+
+    # interval between ticks, convert ms to s
+    interval = float(options.get("interval", 10)) / 1000
+
+    # number of lines per tick
+    speed = int(options.get("speed", 0))
+
+    # max amount of time to scroll
+    max_duration = int(options.get("max_duration", 1000)) / 1000
 
     sender = KakSender()
 
