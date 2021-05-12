@@ -8,7 +8,8 @@ declare-option -docstring %{
                       scrolling (default: 0)
         interval:     average milliseconds between each scroll (default: 10)
         max_duration: maximum duration of a scroll in milliseconds (default: 500)
-} str-to-str-map scroll_options speed=0 interval=10 max_duration=500
+        scrollbar:    whether to trigger the "view-modified" hook used by scrollbar.kak (default: no)
+} str-to-str-map scroll_options speed=0 interval=10 max_duration=500 scrollbar=no
 
 declare-option -docstring %{
     list of keys to apply smooth scrolling in normal mode. Specify only keys
@@ -95,6 +96,7 @@ define-command smooth-scroll-enable -docstring "enable smooth scrolling for wind
     hook -group scroll window WinSetOption scroll_running= %{
         evaluate-commands -client %opt{scroll_client} %{
             try %{ select %opt{scroll_selections} }
+            trigger-user-hook view-scrolled
         }
         unset-face window PrimaryCursor
         unset-face window PrimaryCursorEol

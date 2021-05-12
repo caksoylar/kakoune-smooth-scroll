@@ -10,6 +10,7 @@ import time
 import socket
 
 SEND_INTERVAL = 2e-3  # min time interval (in s) between two sent scroll events
+TRIGGER_CMD = "trigger-user-hook view-scrolled"  # hook trigger for scrollbar
 
 
 class KakSender:
@@ -68,7 +69,9 @@ def parse_options(option_name: str) -> dict:
     return {v[0]: v[1] for v in items}
 
 
-def scroll_once(sender: KakSender, step: int, interval: float) -> None:
+def scroll_once(
+    sender: KakSender, step: int, interval: float, trigger_hook: bool = False
+) -> None:
     """
     Send a scroll event to Kakoune client and make sure it takes at least
     `interval` seconds.
@@ -77,14 +80,17 @@ def scroll_once(sender: KakSender, step: int, interval: float) -> None:
     speed = abs(step)
     keys = f"{speed}j{speed}vj" if step > 0 else f"{speed}k{speed}vk"
     sender.send_keys(keys)
-    sender.send_cmd("trigger-user-hook view-scrolled", client=True)
+    if trigger_hook:
+        sender.send_cmd(TRIGGER_CMD, client=True)
     t_end = time.time()
     elapsed = t_end - t_start
     if elapsed < interval:
         time.sleep(interval - elapsed)
 
 
-def linear_scroll(sender: KakSender, target: int, speed: int, duration: float) -> None:
+def linear_scroll(
+    sender: KakSender, target: int, speed: int, duration: float, trigger_hook: bool = False,
+) -> None:
     """
     Do scrolling with a fixed velocity.
     """
@@ -95,12 +101,14 @@ def linear_scroll(sender: KakSender, target: int, speed: int, duration: float) -
     t_init = time.time()
     for i in range(times):
         if time.time() - t_init > duration:
-            scroll_once(sender, step * (times - i), 0)
+            scroll_once(sender, step * (times - i), 0, trigger_hook)
             break
-        scroll_once(sender, step, interval * (i < times - 1))
+        scroll_once(sender, step, interval * (i < times - 1), trigger_hook)
 
 
-def inertial_scroll(sender: KakSender, target: int, duration: float) -> None:
+def inertial_scroll(
+    sender: KakSender, target: int, duration: float, trigger_hook: bool = False
+) -> None:
     """
     Do inertial scrolling with initial velocity decreasing linearly at each
     step towards zero. Per-step scrolling duration d_i is the inverse of the
@@ -118,7 +126,7 @@ def inertial_scroll(sender: KakSender, target: int, duration: float) -> None:
 
     # keep track of total steps and interval for potential batching
     # before sending a scroll event
-    q_step, q_duration = 0, 0.
+    q_step, q_duration = 0, 0.0
 
     t_init = time.time()
     for i in range(n_lines):
@@ -135,8 +143,8 @@ def inertial_scroll(sender: KakSender, target: int, duration: float) -> None:
         q_duration += interval
         q_step += step
         if i == n_lines - 1 or q_duration >= SEND_INTERVAL:
-            scroll_once(sender, q_step, q_duration)
-            q_step, q_duration = 0, 0.
+            scroll_once(sender, q_step, q_duration, trigger_hook)
+            q_step, q_duration = 0, 0.0
 
 
 def scroll() -> None:
@@ -158,15 +166,18 @@ def scroll() -> None:
     # max amount of time to scroll
     max_duration = int(options.get("max_duration", 1000)) / 1000
 
+    # trigger hook for scrollbar plugin
+    update_scrollbar = options.get("scrollbar") in ("yes", "true")
+
     sender = KakSender()
 
     duration = min((abs(amount) - 1) * interval, max_duration)
 
     # smoothly scroll to target
     if speed > 0 or interval < 1e-3:  # fixed speed scroll
-        linear_scroll(sender, amount, speed, duration)
+        linear_scroll(sender, amount, speed, duration, update_scrollbar)
     else:  # inertial scroll
-        inertial_scroll(sender, amount, duration)
+        inertial_scroll(sender, amount, duration, update_scrollbar)
 
     # report we are done
     sender.send_cmd('set-option window scroll_running ""', client=True)
