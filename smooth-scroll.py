@@ -9,7 +9,7 @@ import os
 import time
 import socket
 
-SEND_INTERVAL = 1e-3  # min time interval (in s) between two sent scroll events
+SEND_INTERVAL = 2e-3  # min time interval (in s) between two sent scroll events
 
 
 class KakSender:
