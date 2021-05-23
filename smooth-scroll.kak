@@ -89,6 +89,7 @@ define-command smooth-scroll-enable -docstring "enable smooth scrolling for wind
         set-face window PrimaryCursor @default
         set-face window PrimaryCursorEol @default
         set-face window LineNumberCursor @LineNumbers
+        evaluate-commands -client %opt{scroll_client} %{ trigger-user-hook ScrollBegin }
     }
 
     # done scrolling, so restore cursor highlighting and original selection
@@ -99,6 +100,7 @@ define-command smooth-scroll-enable -docstring "enable smooth scrolling for wind
         unset-face window PrimaryCursor
         unset-face window PrimaryCursorEol
         unset-face window LineNumberCursor
+        evaluate-commands -client %opt{scroll_client} %{ trigger-user-hook ScrollEnd }
     }
 }
 
