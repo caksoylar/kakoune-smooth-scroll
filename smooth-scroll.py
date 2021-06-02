@@ -18,14 +18,7 @@ class KakSender:
     def __init__(self) -> None:
         self.session = os.environ['kak_session']
         self.client = os.environ['kak_client']
-        xdg_runtime_dir = os.environ.get('XDG_RUNTIME_DIR')
-        if xdg_runtime_dir is None:
-            runtime_path = os.path.join(
-                os.environ.get('TMPDIR', '/tmp'), 'kakoune', os.environ['USER']
-            )
-        else:
-            runtime_path = os.path.join(xdg_runtime_dir, 'kakoune')
-        self.socket_path = os.path.join(runtime_path, self.session)
+        self.socket_path = self._get_socket_path(self.session)
 
     def send_cmd(self, cmd: str, client: bool = False) -> bool:
         """
@@ -57,6 +50,22 @@ class KakSender:
     @staticmethod
     def _encode_length(str_length: int) -> bytes:
         return str_length.to_bytes(4, byteorder=sys.byteorder)
+
+    @staticmethod
+    def _get_socket_path(session: str) -> str:
+        xdg_runtime_dir = os.environ.get('XDG_RUNTIME_DIR')
+        if xdg_runtime_dir is None:
+            tmpdir = os.environ.get('TMPDIR', '/tmp')
+            session_path = os.path.join(
+                tmpdir, f"kakoune-{os.environ['USER']}", session
+            )
+            if not os.path.exists(session_path):  # pre-Kakoune db9ef82
+                session_path = os.path.join(
+                    tmpdir, 'kakoune', os.environ['USER'], session
+                )
+        else:
+            session_path = os.path.join(xdg_runtime_dir, 'kakoune', session)
+        return session_path
 
 
 class Scroller:
@@ -124,7 +133,7 @@ class Scroller:
 
         # keep track of total steps and interval for potential batching
         # before sending a scroll event
-        q_step, q_duration = 0, 0.
+        q_step, q_duration = 0, 0.0
 
         t_init = time.time()
         for i in range(n_lines):
@@ -142,7 +151,7 @@ class Scroller:
             q_step += step
             if i == n_lines - 1 or q_duration >= SEND_INTERVAL:
                 self.scroll_once(q_step, q_duration)
-                q_step, q_duration = 0, 0.
+                q_step, q_duration = 0, 0.0
 
     def scroll(self, amount: int) -> None:
         """
