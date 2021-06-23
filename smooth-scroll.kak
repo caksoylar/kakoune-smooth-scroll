@@ -236,25 +236,25 @@ define-command smooth-scroll-move -params 1 -hidden -docstring %{
         else
             keys="${speed}k${speed}vk"
         fi
-        cmd="printf 'execute-keys -client %s %s\\n' ""$kak_client"" ""$keys"" | kak -p ""$kak_session"""
+        cmd="printf 'exec -client %s %s; eval -client %s ""trigger-user-hook ScrollStep""\\n' ""$kak_client"" ""$keys"" ""$kak_client"" | kak -p ""$kak_session"""
 
         times=$(( abs_amount / speed ))
         if [ $(( times * interval )) -gt "$max_duration" ]; then
-            interval=0
+            interval=$(printf 'scale=3; %f/(%f - 1)\n' "$max_duration" "$times" | bc)
         fi
+        # printf 'echo -debug interval=%f max_duration=%d speed=%d times=%d\n' "$interval" "$max_duration" "$speed" "$times"
         (
             i=0
             t1=$(date +%s.%N)
             while [ $i -lt $times ]; do
                 eval "$cmd"
-                if [ "$interval" -gt 0 ]; then
-                    t2=$(date +%s.%N)
-                    sleep_for=$(printf 'scale=3; %f/1000 - (%f - %f)\n' "$interval" "$t2" "$t1" | bc)
-                    if [ "$sleep_for" -gt 0 ]; then
-                        sleep "$sleep_for"
-                    fi
-                    t1=$t2
+                t2=$(date +%s.%N)
+                sleep_for=$(printf 'scale=3; %f/1000 - (%f - %f)\n' "$interval" "$t2" "$t1" | bc)
+                # printf 'echo -debug i=%d sleep_for=%s\n' $i "$sleep_for" | kak -p "$kak_session"
+                if [ "$sleep_for" = "${sleep_for#-}" ]; then
+                    sleep "$sleep_for"
                 fi
+                t1=$t2
                 i=$(( i + 1 ))
             done
             printf "evaluate-commands -client %s '%s'\\n" "$kak_client" 'set-option window scroll_running ""' | kak -p "$kak_session"
