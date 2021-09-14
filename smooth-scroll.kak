@@ -182,10 +182,10 @@ define-command smooth-scroll-map-key -params 3 -docstring %{
 
 define-command smooth-scroll-execute-keys -params .. -docstring %{
     smooth-scroll-execute-keys <keys>: execute keys as given, scrolling smoothly
-    if window needs to be scrolled. does not modify the buffer even if the keys
+    if window needs to be scrolled. Does not modify the buffer even if the keys
     would normally do so
 } %{
-    # execute key in draft context to figure out the final selection and window_range
+    # execute keys in draft context to figure out the final selection and window_range
     evaluate-commands -draft %{
         execute-keys %val{count} %arg{@}
         set-option window scroll_window %val{window_range}
@@ -198,9 +198,15 @@ define-command smooth-scroll-execute-keys -params .. -docstring %{
             diff=$(( ${kak_opt_scroll_window%% *} - ${kak_window_range%% *} ))
             abs_diff=${diff#-}
             if [ "$abs_diff" -gt 1 ]; then  # we moved the viewport by at least 2
+                # figure out if we are extending the selection or not by checking the first key
+                case $1 in
+                    [G{}%M]) extend=1 ;;
+                    *)       extend=0
+                esac
+
                 # scroll to new position smoothly (selection will be restored when done)
                 printf 'execute-keys <space>\n'
-                printf 'smooth-scroll-move %s\n' "$diff"
+                printf 'smooth-scroll-move %s %s\n' "$diff" "$extend"
                 exit 0
             fi
         fi
@@ -209,19 +215,21 @@ define-command smooth-scroll-execute-keys -params .. -docstring %{
     }
 }
 
-define-command smooth-scroll-move -params 1 -hidden -docstring %{
-    smooth-scroll-move <amount>: smoothly scroll abs(amount) rows down if positive,
-    up if negative. when completed, selections will be restored to the value in
-    %opt{scroll_selections}
+define-command smooth-scroll-move -params 2 -hidden -docstring %{
+    smooth-scroll-move <amount> <extend>: smoothly scroll abs(<amount>) rows down if positive,
+    up if negative. When completed, selections will be restored to the value in
+    %opt{scroll_selections}. If <extend> is a non-zero integer, a selection will be extended
+    instead of moved during the scroll
 } %{
     evaluate-commands %sh{
         amount=$1
+        extend=$2
         abs_amount=${amount#-}
 
         if [ "$abs_amount" -gt 1 ]; then
             # try to run the python version
             if type python3 >/dev/null 2>&1 && [ -f "$kak_opt_scroll_py" ]; then
-                python3 -S "$kak_opt_scroll_py" "$amount" >/dev/null 2>&1 </dev/null &
+                python3 -S "$kak_opt_scroll_py" "$amount" "$extend" >/dev/null 2>&1 </dev/null &
                 printf 'set-option window scroll_running %s\n' "$!"
                 exit 0
             fi
@@ -242,9 +250,11 @@ define-command smooth-scroll-move -params 1 -hidden -docstring %{
         fi
 
         if [ "$abs_amount" = "$amount" ]; then
-            keys="${speed}j${speed}vj"
+            [ "$extend" != 0 ] && move=J || move=j
+            keys="${speed}${move}${speed}vj"
         else
-            keys="${speed}k${speed}vk"
+            [ "$extend" != 0 ] && move=K || move=k
+            keys="${speed}${move}${speed}vk"
         fi
         cmd="printf 'exec -client %s %s; eval -client %s ""trigger-user-hook ScrollStep""\\n' ""$kak_client"" ""$keys"" ""$kak_client"" | kak -p ""$kak_session"""
 
@@ -275,8 +285,8 @@ define-command smooth-scroll-move -params 1 -hidden -docstring %{
 
 define-command smooth-scroll-by-page -params 2 -hidden -docstring %{
     smooth-scroll-by-page <unit> <key>: scroll smoothly by (1 / <unit>) pages,
-    positive for down, negative for up. if the cursor doesn't have to move, scroll
-    manually. otherwise, emulate the key press given by <key>
+    positive for down, negative for up. If the cursor doesn't have to move, scroll
+    manually. Otherwise, emulate the key press given by <key>
 } %{
     evaluate-commands %sh{
         if [ "$kak_count" = 0 ]; then
@@ -288,7 +298,7 @@ define-command smooth-scroll-by-page -params 2 -hidden -docstring %{
         then
             # the cursor doesn't need to move, save the selection and move manually
             printf 'set-option window scroll_selections %s\n' "$kak_selections_desc"
-            printf 'smooth-scroll-move %s\n' "$distance"
+            printf 'smooth-scroll-move %s 0\n' "$distance"
         else
             # the cursor has to move, so emulate the key press
             printf 'smooth-scroll-execute-keys "%s"\n' "$2"

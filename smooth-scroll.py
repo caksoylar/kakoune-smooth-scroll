@@ -71,17 +71,19 @@ class KakSender:
 class Scroller:
     """Class to send smooth scrolling events to Kakoune."""
 
-    def __init__(self, interval: float, speed: int, max_duration: float) -> None:
+    def __init__(self, interval: float, speed: int, max_duration: float, extend: bool) -> None:
         """
         Save scrolling parameters and initialize sender object. `interval`
         is the average step duration, `speed` is the size of each scroll step
-        (0 implies inertial scrolling) and `max_duration` limits the total
-        scrolling duration.
+        (0 implies inertial scrolling), `max_duration` limits the total
+        scrolling duration and `extend` determines whether selection is moved
+        or extended while scrolling.
         """
         self.sender = KakSender()
         self.interval = interval
         self.speed = speed
         self.max_duration = max_duration
+        self.extend = extend
 
     def scroll_once(self, step: int, interval: float) -> None:
         """
@@ -90,7 +92,12 @@ class Scroller:
         """
         t_start = time.time()
         speed = abs(step)
-        keys = f"{speed}j{speed}vj" if step > 0 else f"{speed}k{speed}vk"
+        if step > 0:
+            move = "J" if self.extend else "j"
+            keys = f"{speed}{move}{speed}vj"
+        else:
+            move = "K" if self.extend else "k"
+            keys = f"{speed}{move}{speed}vk"
         self.sender.send_keys(keys)
         self.sender.send_cmd("trigger-user-hook ScrollStep", client=True)
         t_end = time.time()
@@ -183,6 +190,7 @@ def parse_options(option_name: str) -> dict:
 def main() -> None:
     """Parse options from environment variable and call scroller."""
     amount = int(sys.argv[1])
+    extend = int(sys.argv[2]) != 0 if len(sys.argv) > 2 else False
 
     options = parse_options("scroll_options")
 
@@ -195,7 +203,7 @@ def main() -> None:
     # max amount of time to scroll, convert ms to s
     max_duration = int(options.get("max_duration", 1000)) / 1000
 
-    scroller = Scroller(interval, speed, max_duration)
+    scroller = Scroller(interval, speed, max_duration, extend)
     scroller.scroll(amount)
 
 
