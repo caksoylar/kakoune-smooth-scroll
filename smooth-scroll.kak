@@ -70,7 +70,7 @@ define-command smooth-scroll-enable -docstring "enable smooth scrolling for wind
     set-option window scroll_client %val{client}
 
     # remember what key we used to enter a mode so we can replicate it
-    hook -group scroll window NormalKey [gGvV[\]{}]|<a-[ai]> %{
+    hook -group scroll window NormalKey [gG[\]{}]|<a-[ai]> %{
         set-option window scroll_mode %val{hook_param}
     }
 
