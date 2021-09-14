@@ -9,6 +9,11 @@ declare-option -docstring %{
         interval:     average milliseconds between each scroll (default: 10)
         max_duration: maximum duration of a scroll in milliseconds (default: 500)
 } str-to-str-map scroll_options speed=0 interval=10 max_duration=500
+declare-option -docstring %{
+    show cursor while scrolling, including extending the selection for required
+    operations. If not true, then the cursor and primary selection are hidden while
+    scrolling (default).
+} bool scroll_show_cursor false
 
 declare-option -docstring %{
     list of keys to apply smooth scrolling in normal mode. Specify only keys
@@ -86,9 +91,12 @@ define-command smooth-scroll-enable -docstring "enable smooth scrolling for wind
 
     # started scrolling, make cursor invisible to make it less jarring
     hook -group scroll window WinSetOption scroll_running=\d+ %{
-        set-face window PrimaryCursor @default
-        set-face window PrimaryCursorEol @default
-        set-face window LineNumberCursor @LineNumbers
+        evaluate-commands %sh{
+            if [ "$kak_opt_scroll_show_cursor" != "true" ]; then
+                printf 'set-face window %s @default\n' PrimaryCursor PrimaryCursorEol PrimarySelection
+                printf 'set-face window LineNumberCursor @LineNumbers\n'
+            fi
+        }
         evaluate-commands -client %opt{scroll_client} %{ trigger-user-hook ScrollBegin }
     }
 
@@ -97,9 +105,11 @@ define-command smooth-scroll-enable -docstring "enable smooth scrolling for wind
         evaluate-commands -client %opt{scroll_client} %{
             try %{ select %opt{scroll_selections} }
         }
-        unset-face window PrimaryCursor
-        unset-face window PrimaryCursorEol
-        unset-face window LineNumberCursor
+        evaluate-commands %sh{
+            if [ "$kak_opt_scroll_show_cursor" != "true" ]; then
+                printf 'unset-face window %s\n' PrimaryCursor PrimaryCursorEol PrimarySelection LineNumberCursor
+            fi
+        }
         evaluate-commands -client %opt{scroll_client} %{ trigger-user-hook ScrollEnd }
     }
 }
