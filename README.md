@@ -114,7 +114,7 @@ smooth-scroll-execute-keys /TODO|FIXME<ret>
 
 Note: Smooth scrolling still has to be enabled in the window scope using `smooth-scroll-enable` for above commands to work properly.
 
-### Customization using hooks
+### Visual customization
 
 `kakoune-smooth-scroll` triggers three user hooks during a movement: `ScrollBegin` just before scrolling, `ScrollStep` after each scroll step and `ScrollEnd` after scrolling is finished. These can be used to customize appearance changes during scrolling. For instance, you could change line numbers to absolute while scrolling, then restore them to relative after the scroll is complete with the following hook definitions:
 ```kak
@@ -131,6 +131,8 @@ These hooks can also help with integrating with other plugins. For instance, if 
 ```kak
 hook window User ScrollStep %{ update-scrollbar }
 ```
+
+By default, `kakoune-smooth-scroll` also hides the cursor when scrolling by altering certain faces temporarily. You can disable this by setting the boolean option `scroll_show_cursor` to `true` or `yes`.
 
 ## Caveats
 - Smooth scrolling is not performed for movements that do not modify the selection, such as any movement through the `view` mode. See [related Kakoune issue](https://github.com/mawww/kakoune/issues/3616)
