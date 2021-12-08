@@ -12,76 +12,23 @@ import socket
 SEND_INTERVAL = 2e-3  # min time interval (in s) between two sent scroll events
 
 
-class KakSender:
-    """Helper to communicate with Kakoune's remote API using Unix sockets."""
-
-    def __init__(self) -> None:
-        self.session = os.environ['kak_session']
-        self.client = os.environ['kak_client']
-        self.socket_path = self._get_socket_path(self.session)
-
-    def send_cmd(self, cmd: str, client: bool = False) -> bool:
-        """
-        Send a command string to the Kakoune session. Sent data is a
-        concatenation of:
-           - Header
-             - Magic byte indicating type is "command" (\x02)
-             - Length of whole message in uint32
-           - Content
-             - Length of command string in uint32
-             - Command string
-        Return whether the communication was successful.
-        """
-        if client:
-            cmd = f"evaluate-commands -client {self.client} %😬{cmd}😬"
-        b_cmd = cmd.encode('utf-8')
-        sock = socket.socket(socket.AF_UNIX)
-        sock.connect(self.socket_path)
-        b_content = self._encode_length(len(b_cmd)) + b_cmd
-        b_header = b'\x02' + self._encode_length(len(b_content) + 5)
-        b_message = b_header + b_content
-        return sock.send(b_message) == len(b_message)
-
-    def send_keys(self, keys: str) -> bool:
-        """Send a sequence of keys to the client in the Kakoune session."""
-        cmd = f"execute-keys -client {self.client} {keys}"
-        return self.send_cmd(cmd)
-
-    @staticmethod
-    def _encode_length(str_length: int) -> bytes:
-        return str_length.to_bytes(4, byteorder=sys.byteorder)
-
-    @staticmethod
-    def _get_socket_path(session: str) -> str:
-        xdg_runtime_dir = os.environ.get('XDG_RUNTIME_DIR')
-        if xdg_runtime_dir is None:
-            tmpdir = os.environ.get('TMPDIR', '/tmp')
-            session_path = os.path.join(
-                tmpdir, f"kakoune-{os.environ['USER']}", session
-            )
-            if not os.path.exists(session_path):  # pre-Kakoune db9ef82
-                session_path = os.path.join(
-                    tmpdir, 'kakoune', os.environ['USER'], session
-                )
-        else:
-            session_path = os.path.join(xdg_runtime_dir, 'kakoune', session)
-        return session_path
-
-
 class Scroller:
     """Class to send smooth scrolling events to Kakoune."""
 
-    def __init__(self, interval: float, speed: int, max_duration: float) -> None:
+    def __init__(
+        self, interval: float, speed: int, max_duration: float
+    ) -> None:
         """
         Save scrolling parameters and initialize sender object. `interval`
         is the average step duration, `speed` is the size of each scroll step
         (0 implies inertial scrolling) and `max_duration` limits the total
         scrolling duration.
         """
-        self.sender = KakSender()
         self.interval = interval
         self.speed = speed
         self.max_duration = max_duration
+        self.command_fifo = sys.argv[2]
+        self.response_fifo = sys.argv[3]
 
     def scroll_once(self, step: int, interval: float) -> None:
         """
@@ -91,8 +38,16 @@ class Scroller:
         t_start = time.time()
         speed = abs(step)
         keys = f"{speed}j{speed}vj" if step > 0 else f"{speed}k{speed}vk"
-        self.sender.send_keys(keys)
-        self.sender.send_cmd("trigger-user-hook ScrollStep", client=True)
+        with open(self.command_fifo, "w") as handle:
+            handle.write(
+                f"""
+                execute-keys {keys}<c-l>
+                trigger-user-hook ScrollStep
+                echo -to-file {self.response_fifo} ''
+                """
+            )
+        with open(self.response_fifo, "r") as handle:
+            handle.read()
         t_end = time.time()
         elapsed = t_end - t_start
         if elapsed < interval:
@@ -167,14 +122,11 @@ class Scroller:
         else:  # inertial scroll
             self.inertial_scroll(amount, duration)
 
-        # report we are done
-        self.sender.send_cmd('set-option window scroll_running ""', client=True)
-
 
 def parse_options(option_name: str) -> dict:
     """Parse a Kakoune map option and return a str-to-str dict."""
     items = [
-        elt.split('=', maxsplit=1)
+        elt.split("=", maxsplit=1)
         for elt in os.environ[f"kak_opt_{option_name}"].split()
     ]
     return {v[0]: v[1] for v in items}
@@ -199,5 +151,5 @@ def main() -> None:
     scroller.scroll(amount)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
