@@ -189,7 +189,7 @@ define-command smooth-scroll-execute-keys -params .. -docstring %{
             abs_diff=${diff#-}
             if [ "$abs_diff" -gt 1 ]; then  # we moved the viewport by at least 2
                 # scroll to new position smoothly (selection will be restored when done)
-                printf 'execute-keys <space>\n'
+                printf 'execute-keys <space><esc>,<esc>\n'
                 printf 'smooth-scroll-move %s\n' "$diff"
                 exit 0
             fi
