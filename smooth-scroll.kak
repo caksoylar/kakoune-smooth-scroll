@@ -18,8 +18,8 @@ declare-option -docstring %{
 
     Default:
         <c-f> <c-b> <c-d> <c-u> <pageup> <pagedown> ( ) m M <a-semicolon>
-        <percent> n <a-n> N <a-N> u U <a-u> <a-U>
-} str-list scroll_keys_normal <c-f> <c-b> <c-d> <c-u> <pageup> <pagedown> ( ) m M <a-semicolon> \% n <a-n> N <a-N> u U <a-u> <a-U>
+        <percent> n <a-n> N <a-N> u U
+} str-list scroll_keys_normal <c-f> <c-b> <c-d> <c-u> <pageup> <pagedown> ( ) m M <a-semicolon> \% n <a-n> N <a-N> u U
 
 declare-option -docstring %{
     list of keys to apply smooth scrolling in goto mode. If source and

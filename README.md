@@ -41,33 +41,33 @@ Above excludes special buffers that start with `*` like `*debug*`, `*scratch*` o
 ### Customizing mapped keys
 Keys that are mapped for each mode are customized via the `scroll_keys_normal`, `scroll_keys_goto` and `scroll_keys_object` options. If for a mode the corresponding option is not set, keys that are mapped by default are the following:
 
-| **normal** keys                           | description                                 |
-| ------                                    | ------                                      |
-|`<c-f>`, `<pagedown>`, `<c-b>`, `<pageup>` | scroll one page down/up                     |
-|`<c-d>`, `<c-u>`                           | scroll half a page down/up                  |
-|`)`, `(`                                   | rotate main selection forward/backward      |
-|`m`, `M`                                   | select/extend to next matching character    |
-|`<a-semicolon>` (`<a-;>`)                  | flip direction of selection                 |
-|`<percent>` (`%`)                          | select whole buffer                         |
-|`n`, `<a-n>`, `N`, `<a-N>`                 | select/extend to next/previous match        |
-|`u`, `U`, `<a-u>`, `<a-U>`                 | undo/redo, move backward/forward in history |
+| **normal** keys                           | description                              |
+| ------                                    | ------                                   |
+|`<c-f>`, `<pagedown>`, `<c-b>`, `<pageup>` | scroll one page down/up                  |
+|`<c-d>`, `<c-u>`                           | scroll half a page down/up               |
+|`)`, `(`                                   | rotate main selection forward/backward   |
+|`m`, `M`                                   | select/extend to next matching character |
+|`<a-semicolon>` (`<a-;>`)                  | flip direction of selection              |
+|`<percent>` (`%`)                          | select whole buffer                      |
+|`n`, `<a-n>`, `N`, `<a-N>`                 | select/extend to next/previous match     |
+|`u`, `U`                                   | undo/redo                                |
 
-| **goto** keys                             | description                                 |
-| ------                                    | ------                                      |
-|`g`, `k`                                   | buffer top                                  |
-|`j`                                        | buffer bottom                               |
-|`e`                                        | buffer end                                  |
-|`.`                                        | last buffer change                          |
+| **goto** keys                             | description                              |
+| ------                                    | ------                                   |
+|`g`, `k`                                   | buffer top                               |
+|`j`                                        | buffer bottom                            |
+|`e`                                        | buffer end                               |
+|`.`                                        | last buffer change                       |
 
-| **object** keys                           | description                                 |
-| ------                                    | ------                                      |
-|`B`, `{`, `}`                              | braces block                                |
-|`p`                                        | paragraph                                   |
-|`i`                                        | indent                                      |
+| **object** keys                           | description                              |
+| ------                                    | ------                                   |
+|`B`, `{`, `}`                              | braces block                             |
+|`p`                                        | paragraph                                |
+|`i`                                        | indent                                   |
 
 Default behavior is equivalent to the following configuration:
 ```kak
-set-option global scroll_keys_normal <c-f> <c-b> <c-d> <c-u> <pageup> <pagedown> ( ) m M <a-semicolon> <percent> n <a-n> N <a-N> u U <a-u> <a-U>
+set-option global scroll_keys_normal <c-f> <c-b> <c-d> <c-u> <pageup> <pagedown> ( ) m M <a-semicolon> <percent> n <a-n> N <a-N> u U
 set-option global scroll_keys_goto g k j e .
 set-option global scroll_keys_object B { } p i
 ```
