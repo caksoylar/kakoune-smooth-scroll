@@ -43,7 +43,7 @@ declare-option -docstring %{
 declare-option -hidden str scroll_py %sh{printf "%s" "${kak_source%.kak}.py"}  # python script path
 declare-option -hidden bool scroll_fallback false  # remember if we fell back to sh impl
 declare-option -hidden str scroll_running ""       # pid of scroll process if it running
-declare-option -hidden str scroll_window           # new location after a key press
+declare-option -hidden str-list scroll_window      # new location after a key press
 declare-option -hidden str-list scroll_selections  # new selections after a key press
 declare-option -hidden str scroll_client           # store for WinSetOption hook which runs in draft context
 declare-option -hidden str scroll_mode             # key we used to enter a mode so we can replicate it
