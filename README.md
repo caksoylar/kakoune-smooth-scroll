@@ -1,4 +1,5 @@
 # kakoune-smooth-scroll
+
 Smooth scrolling for the [Kakoune](https://kakoune.org) text editor, with inertial movement
 
 [![demo](https://caksoylar.github.io/kakoune-smooth-scroll/kakoune-smooth-scroll-v2-60fps.gif)](https://asciinema.org/a/m0DhKbv9AjAABOABKadgeYnH6?autoplay=1&loop=1)
@@ -12,6 +13,16 @@ It also has support for inertial scrolling, also called the "easing out" or "sof
 This effect is similar to Vim plugins such as [comfortable-motion.vim](https://github.com/yuttie/comfortable-motion.vim), [vim-smoothie](https://github.com/psliwka/vim-smoothie/) and [sexy-scroller.vim](https://github.com/joeytwiddle/sexy_scroller.vim).
 
 ## Installation
+
+> [!IMPORTANT]
+> `kakoune-smooth-scroll` doesn't work with Kakoune `master` branch due to [this commit](https://github.com/mawww/kakoune/commit/9787756619c47beb189d7bc14623d86e88516e8c), see issue https://github.com/mawww/kakoune/issues/5017.
+> It works with release version `v2023.08.05`.
+> You can use [this patch](revert_9787756.patch) to revert the problematic commit in the kakoune repo:
+> 
+> ```sh
+> curl -sL https://raw.githubusercontent.com/caksoylar/kakoune-smooth-scroll/master/revert_9787756.patch | git am
+> ```
+
 Download `smooth-scroll.kak` and `smooth-scroll.py` to your `autoload` folder, e.g. into `~/.config/kak/autoload`.
 Or you can put them both in any location and `source path/to/smooth-scroll.kak` in your `kakrc`.
 
@@ -23,6 +34,7 @@ plug "caksoylar/kakoune-smooth-scroll" config %{
 ```
 
 ## Configuration
+
 `kakoune-smooth-scroll` operates through a mapping mechanism for keys in `normal`, `goto` and `object` modes.
 Mapped keys will perform their usual functions but when they need to scroll the window the scrolling will happen smoothly.
 
@@ -39,6 +51,7 @@ hook global WinCreate [^*].* %{
 Above excludes special buffers that start with `*` like `*debug*`, `*scratch*` or `*plug*`.
 
 ### Customizing mapped keys
+
 Keys that are mapped for each mode are customized via the `scroll_keys_normal`, `scroll_keys_goto` and `scroll_keys_object` options. If for a mode the corresponding option is not set, keys that are mapped by default are the following:
 
 | **normal** keys                           | description                              |
@@ -80,6 +93,7 @@ set-option global scroll_keys_goto
 ```
 
 ### Scrolling parameters
+
 There are a few parameters related to the scrolling behavior that are adjustable through the `scroll_options` option which is a list of `<key>=<value>` pairs. Following keys are accepted and all of them are optional:
 - `speed`: number of lines to scroll per tick, `0` for inertial scrolling (default: `0`)
 - `interval`: average milliseconds between each tick (default: `10`)
@@ -133,6 +147,7 @@ hook window User ScrollStep %{ update-scrollbar }
 ```
 
 ## Caveats
+
 - Smooth scrolling is not performed for movements that do not modify the selection, such as any movement through the `view` mode. See [related Kakoune issue](https://github.com/mawww/kakoune/issues/3616)
   - Keys that scroll by page (`<c-f>`,`<c-b>`,`<c-d>`,`<c-u>`) are handled specially to work around this limitation
 - Movements that are caused by the `prompt` mode such as `/search_word<ret>` can not be mapped at the moment
@@ -143,7 +158,9 @@ hook window User ScrollStep %{ update-scrollbar }
   - This implementation utilizes Kakoune's internal [remote API](https://github.com/mawww/kakoune/blob/master/src/remote.hh)
 
 ## Acknowledgments
+
 Thanks @Screwtapello and @Guest0x0 for valuable feedback and fixes!
 
 ## License
+
 MIT

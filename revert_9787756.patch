@@ -1,0 +1,67 @@
+From 48c934d2005bc35504fd9f07349caa7bebcc37a8 Mon Sep 17 00:00:00 2001
+From: Cem Aksoylar <caksoylar@users.noreply.github.com>
+Date: Sun, 18 Feb 2024 22:01:30 -0800
+Subject: [PATCH] Revert "Use last display setup instead of recomputing for
+ window_range"
+
+This reverts commit 9787756619c47beb189d7bc14623d86e88516e8c.
+---
+ src/main.cc   | 2 +-
+ src/window.cc | 1 -
+ src/window.hh | 5 +----
+ 3 files changed, 2 insertions(+), 6 deletions(-)
+
+diff --git a/src/main.cc b/src/main.cc
+index 98181601..81547e26 100644
+--- a/src/main.cc
++++ b/src/main.cc
+@@ -394,7 +394,7 @@ static const EnvVarDesc builtin_env_vars[] = { {
+         "window_range", false,
+         [](StringView name, const Context& context) -> Vector<String>
+         {
+-            const auto& setup = context.window().last_display_setup();
++            auto setup = context.window().compute_display_setup(context);
+             return {to_string(setup.first_line), to_string(setup.first_column),
+                     to_string(setup.line_count), to_string(0)};
+         }
+diff --git a/src/window.cc b/src/window.cc
+index 1f444211..07040835 100644
+--- a/src/window.cc
++++ b/src/window.cc
+@@ -155,7 +155,6 @@ const DisplayBuffer& Window::update_display_buffer(const Context& context)
+ 
+     set_position({setup.first_line, setup.first_column});
+     m_last_setup = build_setup(context);
+-    m_last_display_setup = setup;
+ 
+     return m_display_buffer;
+ }
+diff --git a/src/window.hh b/src/window.hh
+index 65253c87..2b96cb70 100644
+--- a/src/window.hh
++++ b/src/window.hh
+@@ -49,12 +49,10 @@ public:
+     void clear_display_buffer();
+     void run_resize_hook_ifn();
+ 
+-    const DisplaySetup& last_display_setup() const { return m_last_display_setup; }
+-
++    DisplaySetup compute_display_setup(const Context& context) const;
+ private:
+     Window(const Window&) = delete;
+ 
+-    DisplaySetup compute_display_setup(const Context& context) const;
+     void on_option_changed(const Option& option) override;
+ 
+     friend class ClientManager;
+@@ -70,7 +68,6 @@ private:
+ 
+     Highlighters m_builtin_highlighters;
+     bool m_resize_hook_pending = false;
+-    DisplaySetup m_last_display_setup;
+ 
+     struct Setup
+     {
+-- 
+2.43.2
+
