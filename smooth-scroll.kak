@@ -74,16 +74,6 @@ define-command smooth-scroll-enable -docstring "enable smooth scrolling for wind
         set-option window scroll_mode %val{hook_param}
     }
 
-    # when we exit normal mode, kill the scrolling process if it is currently running
-    hook -group scroll window ModeChange push:normal:.* %{
-        evaluate-commands %sh{
-            if [ -n "$kak_opt_scroll_running" ]; then
-                kill "$kak_opt_scroll_running"
-                printf 'set-option window scroll_running ""\n'
-            fi
-        }
-    }
-
     # started scrolling, make cursor invisible to make it less jarring
     hook -group scroll window WinSetOption scroll_running=\d+ %{
         set-face window PrimaryCursor @default
@@ -211,8 +201,14 @@ define-command smooth-scroll-move -params 1 -hidden -docstring %{
         if [ "$abs_amount" -gt 1 ]; then
             # try to run the python version
             if type python3 >/dev/null 2>&1 && [ -f "$kak_opt_scroll_py" ]; then
-                python3 -S "$kak_opt_scroll_py" "$amount" >/dev/null 2>&1 </dev/null &
-                printf 'set-option window scroll_running %s\n' "$!"
+                printf 'set-option window scroll_running 1\n' \
+                    > "$kak_command_fifo"
+                python3 -S "$kak_opt_scroll_py" \
+                    "$amount" \
+                    "$kak_command_fifo" \
+                    "$kak_response_fifo"
+                printf 'set-option window scroll_running ""\n' \
+                    > "$kak_command_fifo"
                 exit 0
             fi
 
