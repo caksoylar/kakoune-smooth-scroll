@@ -1,0 +1,43 @@
+From 5584d12fc93e0bcddcde14eccb62555e7154bb5e Mon Sep 17 00:00:00 2001
+From: Cem Aksoylar <caksoylar@users.noreply.github.com>
+Date: Tue, 14 Oct 2025 21:43:25 -0700
+Subject: [PATCH] Force recompute window range on change
+
+---
+ src/main.cc   | 2 +-
+ src/window.hh | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/src/main.cc b/src/main.cc
+index eb8471a3..92788371 100644
+--- a/src/main.cc
++++ b/src/main.cc
+@@ -318,7 +318,7 @@ const EnvVarDesc builtin_env_vars[] = { {
+         "window_range", false,
+         [](StringView name, const Context& context) -> Vector<String>
+         {
+-            const auto& setup = context.window().last_display_setup();
++            auto setup = context.window().compute_display_setup(context);
+             const auto width = context.window().dimensions().column - setup.widget_columns;
+             return {to_string(setup.first_line), to_string(setup.first_column),
+                     to_string(setup.line_count), to_string(width)};
+diff --git a/src/window.hh b/src/window.hh
+index 3e1e5f95..b8427332 100644
+--- a/src/window.hh
++++ b/src/window.hh
+@@ -50,11 +50,11 @@ public:
+     void run_resize_hook_ifn();
+ 
+     const DisplaySetup& last_display_setup() const { return m_last_display_setup; }
++    DisplaySetup compute_display_setup(const Context& context) const;
+ 
+ private:
+     Window(const Window&) = delete;
+ 
+-    DisplaySetup compute_display_setup(const Context& context) const;
+     void on_option_changed(const Option& option) override;
+ 
+     friend class ClientManager;
+-- 
+2.46.1
+

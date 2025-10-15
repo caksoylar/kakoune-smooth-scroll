@@ -17,7 +17,13 @@ This effect is similar to Vim plugins such as [comfortable-motion.vim](https://g
 > [!IMPORTANT]
 > `kakoune-smooth-scroll` doesn't work with Kakoune `master` branch due to [this commit](https://github.com/mawww/kakoune/commit/9787756619c47beb189d7bc14623d86e88516e8c), see issue https://github.com/mawww/kakoune/issues/5017.
 > It works with release version `v2023.08.05`.
-> You can use [this patch](revert_9787756.patch) to revert the problematic commit in the kakoune repo:
+> You can use [this patch](revert_9787756_master.patch) to revert the problematic commit in the kakoune repo:
+> 
+> ```sh
+> curl -sL https://raw.githubusercontent.com/caksoylar/kakoune-smooth-scroll/master/revert_9787756_master.patch | git am
+> ```
+>
+> If you use the master branch before 2025-10-14 ([this commit](https://github.com/mawww/kakoune/commit/367ebc09515cc7cd25efbeedd4b4fb56142e761b)) then apply this patch instead:
 > 
 > ```sh
 > curl -sL https://raw.githubusercontent.com/caksoylar/kakoune-smooth-scroll/master/revert_9787756.patch | git am
